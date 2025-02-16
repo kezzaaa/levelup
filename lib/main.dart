@@ -50,8 +50,18 @@ class MyApp extends StatelessWidget {
           ),
         ),
         checkboxTheme: CheckboxThemeData(
-          checkColor: WidgetStateProperty.all<Color>(Colors.green),
-          overlayColor: WidgetStateProperty.all<Color>(Colors.green),
+          fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return Colors.green; // Green fill when selected
+            }
+            return Colors.transparent; // Transparent fill when unselected
+          }),
+          checkColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return Colors.white; // White checkmark when selected
+            }
+            return null; // No check color when unselected
+          }),
         ),
         scaffoldBackgroundColor: Colors.grey.shade900,
         textTheme: const TextTheme(
@@ -76,24 +86,48 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
-    
+    // Initialize the AnimationController
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1), // Duration for the pulse effect
+      lowerBound: 0.8, // The smallest scale factor
+      upperBound: 1.0, // The largest scale factor should be 1.0 for a normal scale
+    )..repeat(reverse: true); // Repeat the animation in reverse
+
+    // Define the scale animation
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut, // Add a smooth ease-in-out curve
+    );
+
     // After a 3-second delay, navigate to the appropriate screen
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        // If user has seen the intro, go straight to login
-        // Otherwise, start the introduction flow
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => widget.hasSeenIntro ? const MyHomePage(title: 'Home Page',) : const IntroductionFlow(),
-          ),
-        );
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          // If user has seen the intro, go straight to login
+          // Otherwise, start the introduction flow
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => widget.hasSeenIntro ? const MyHomePage() : const IntroductionFlow(),
+            ),
+          );
+        }
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // Dispose of the controller to prevent memory leaks
+    super.dispose();
   }
 
   @override
@@ -102,10 +136,19 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         color: Theme.of(context).colorScheme.primary,
         child: Center(
-          child: Image.asset(
-            'assets/images/apple.png', // Logo or splash image
-            width: 60,
-            height: 60,
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _scaleAnimation.value, // Apply the scaling animation
+                child: child, // This is where the logo widget is inserted
+              );
+            },
+            child: Image.asset(
+              'assets/images/leveluplogo.png', // Logo or splash image
+              width: 150,
+              height: 150,
+            ),
           ),
         ),
       ),
@@ -188,7 +231,7 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
               Text(
                 'Tap anywhere to continue...',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
           ),
@@ -219,13 +262,21 @@ class QuestionScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Did you know [insert fact here]?',
+                'Did you know there are approximately 3.3 billion gamers worldwide?',
                 style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "You see, gaming is a widespread hobby, we're just here to help you reduce it.",
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               Text(
                 'Tap anywhere to continue...',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -263,6 +314,10 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
+        elevation: 0, // Optional: remove shadow
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -322,7 +377,7 @@ class QuestionnaireScreen2 extends StatefulWidget {
 }
 
 class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
-  TextEditingController _dateController = TextEditingController();
+  final TextEditingController _dateController = TextEditingController();
 
   // Function to save the selected date and proceed to next screen (Login)
   void _saveBirthDateAndProceed() async {
@@ -359,6 +414,19 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+            onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const QuestionnaireScreen1()),
+            );
+          },
+        ),
+        backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
+        elevation: 0, // Optional: remove shadow
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -369,15 +437,21 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
           const SizedBox(height: 20),
 
           // Date input field with a date picker
-          TextFormField(
-            controller: _dateController,
-            readOnly: true, // Prevent the user from typing in the text field directly
-            onTap: () => _selectDate(context),
-            decoration: InputDecoration(
-              labelText: 'Select Birth Date',
-              hintText: 'dd/mm/yyyy',
-              border: OutlineInputBorder(),
-              suffixIcon: Icon(Icons.calendar_today),
+          Center(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8, // Set width to 80% of screen
+              child: TextFormField(
+                controller: _dateController,
+                readOnly: true, // Prevent manual typing
+                onTap: () => _selectDate(context),
+                decoration: InputDecoration(
+                  labelText: 'Select Birth Date',
+                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.secondary,
+                  suffixIcon: Icon(Icons.calendar_today),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -421,6 +495,19 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const QuestionnaireScreen2()),
+          );
+        },
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
+      elevation: 0, // Optional: remove shadow
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -467,7 +554,7 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
                     fillColor: Theme.of(context).colorScheme.secondary,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
+                      borderSide: BorderSide(color: Colors.white)
                     ),
                   ),
                 ),
@@ -513,11 +600,24 @@ class _QuestionnaireScreen4State extends State<QuestionnaireScreen4> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const QuestionnaireScreen3()),
+          );
+        },
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
+      elevation: 0, // Optional: remove shadow
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            "How severe is your gaming addiction?",
+            "How often do you play games daily?",
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 20),
@@ -606,6 +706,19 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const QuestionnaireScreen4()),
+          );
+        },
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
+      elevation: 0, // Optional: remove shadow
+      ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -673,6 +786,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
                 ? () async {
                     await _saveAreaAndProceed();
                     Navigator.push(
+                      // ignore: use_build_context_synchronously
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UsernamePasswordScreen(),
@@ -725,7 +839,7 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
     if (mounted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const MyHomePage(title: 'Home Page'),
+          builder: (context) => const MyHomePage(),
         ),
       );
     }
@@ -734,6 +848,19 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const QuestionnaireScreen5()),
+          );
+        },
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
+      elevation: 0, // Optional: remove shadow
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -796,98 +923,301 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
   }
 }
 
-// Login or Sign-Up screen
-class LoginScreen extends StatelessWidget {
+// Login screen
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.primary,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Login or Sign Up',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isPasswordVisible = false; // Password visibility toggle
+
+  // Function to handle login
+  Future<void> _login() async {
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      _showError('Please enter both username and password.');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final savedUsername = prefs.getString('username');
+    final savedPassword = prefs.getString('password');
+
+    if (username == savedUsername && password == savedPassword) {
+      // Navigate to home page on successful login
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MyHomePage(), // Navigate to the home page
+        ),
+      );
+    } else {
+      _showError('Invalid username or password.');
+    }
+  }
+
+  // Function to show error message
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error', style: TextStyle(color: Colors.white),),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
               onPressed: () {
-                // Navigate to the main home page
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const MyHomePage(title: 'Home Page'),
-                  ),
-                );
+                Navigator.of(context).pop();
               },
-              child: const Text('Continue'),
+              child: const Text('OK'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        color: Theme.of(context).colorScheme.primary,
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Login to LevelUp',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 20),
+
+                // Username TextField
+                TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(),
+                  ),
+                  textInputAction: TextInputAction.next, // Move to password field on "next"
+                  onSubmitted: (_) {
+                    // Move to password field when user presses enter or next
+                    FocusScope.of(context).requestFocus(FocusNode());
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Password TextField
+                TextField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: !_isPasswordVisible,
+                  textInputAction: TextInputAction.done, // "Done" action when submitted
+                  onSubmitted: (_) => _login(), // Trigger login on "done"
+                ),
+                const SizedBox(height: 20),
+
+                // Login Button
+                ElevatedButton(
+                  onPressed: _login,
+                  child: const Text('Log In'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-// Main home page after login
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+  const MyHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _selectedIndex = 2; // Default to the home tab
+  String _username = ""; // Default is an empty string
+  int _selectedIndex = 2; // Default to 'Home' tab
 
-  // Update selected index when a tab is tapped
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername(); // Load the username when the screen is initialized
+  }
+
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _username = prefs.getString('username') ?? "User"; // Default to "User" if null
+    });
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  // List of screens corresponding to the tabs
+  final List<Widget> _pages = [];
+
   @override
   Widget build(BuildContext context) {
+    // Update _pages after the username has been loaded
+    _pages.clear();
+    _pages.addAll([
+      ProfileScreen(),
+      SocialScreen(),
+      HomeScreen(username: _username), // Pass the actual username here
+      MissionsScreen(),
+      ProgressScreen(),
+    ]);
+
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-        ),
-      ),
+      body: _pages[_selectedIndex], // Display selected page based on index
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        currentIndex: _selectedIndex, // Ensure it highlights the selected tab
+        onTap: _onItemTapped, // Handle tab selection
         backgroundColor: Theme.of(context).colorScheme.secondary,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Account',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Social',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_box),
-            label: 'Missions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_sharp),
-            label: 'Progress',
+          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Account'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Social'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.check_box), label: 'Missions'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_sharp), label: 'Progress'),
+        ],
+      ),
+    );
+  }
+}
+
+// HomeScreen displaying the username
+class HomeScreen extends StatelessWidget {
+  final String username;
+  const HomeScreen({super.key, required this.username});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Welcome, $username!", // Display the username dynamically
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ProfileScreen displaying the log-out button
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 20),
+          
+          // Red Log Out Button
+          ElevatedButton(
+            onPressed: () {
+              // Implement logout logic here (e.g., clear saved user data)
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()), // Navigate to LoginScreen
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red, // Red background color
+              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12), // Adjust padding if needed
+            ),
+            child: const Text(
+              "Log Out",
+              style: TextStyle(color: Colors.white), // White text
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Social Screen
+class SocialScreen extends StatelessWidget {
+  const SocialScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        "Social Screen",
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+// Missions Screen
+class MissionsScreen extends StatelessWidget {
+  const MissionsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        "Missions Screen",
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+// Progress Screen
+class ProgressScreen extends StatelessWidget {
+  const ProgressScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        "Progress Screen",
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
   }
