@@ -43,11 +43,13 @@ class _IntroductionFlowState extends State<IntroductionFlow> {
               children: [
                 const WelcomeScreen(),
                 const QuestionScreen(),
+                const PreQuestionnaireScreen(),
                 const QuestionnaireScreen1(),
                 const QuestionnaireScreen2(),
                 const QuestionnaireScreen3(),
                 const QuestionnaireScreen4(),
                 const QuestionnaireScreen5(),
+                const PreAvatarScreen(),
                 AvatarCreatorScreen(prefs: prefs), // Pass prefs directly to the screen
                 const UsernamePasswordScreen(),
               ],
@@ -55,25 +57,6 @@ class _IntroductionFlowState extends State<IntroductionFlow> {
           : const Center(),
     );
   }
-}
-
-// Custom page transition with a slide effect
-PageRouteBuilder _createSlideTransition(Widget page) {
-  return PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) {
-      return page;
-    },
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      const offsetBegin = Offset(1.0, 0.0); // Slide from right to left
-      const offsetEnd = Offset.zero;
-      const curve = Curves.easeInOut;
-
-      var tween = Tween(begin: offsetBegin, end: offsetEnd).chain(CurveTween(curve: curve));
-      var offsetAnimation = animation.drive(tween);
-
-      return SlideTransition(position: offsetAnimation, child: child);
-    },
-  );
 }
 
 // A simple welcome prompt for the app
@@ -122,13 +105,13 @@ class QuestionScreen extends StatelessWidget {
         // Skip to next screen when tapped
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const QuestionnaireScreen1()),
+          MaterialPageRoute(builder: (context) => const PreQuestionnaireScreen()),
         );
       },
       child: Container(
         color: Theme.of(context).colorScheme.primary,
         child: Center(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.8, // Set width to 80% of screen
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -140,7 +123,7 @@ class QuestionScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "You see, gaming is a widespread hobby, we're just here to help you reduce it.",
+                  "You see, gaming is a widespread hobby, no need to be ashamed. We're just here to help you try and reduce it.",
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -157,6 +140,78 @@ class QuestionScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class PreQuestionnaireScreen extends StatelessWidget {
+  const PreQuestionnaireScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const QuestionnaireScreen1()),
+        );
+      },
+      child: Container(
+        color: Theme.of(context).colorScheme.primary,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'But first, tell us a bit more about yourself!',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Tap anywhere to continue...',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Custom page transition with a slide effect
+PageRouteBuilder _createSlideTransition(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return page;
+    },
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const offsetBegin = Offset(1.0, 0.0); // Slide from right to left
+      const offsetEnd = Offset.zero;
+      const curve = Curves.easeInOut;
+
+      var tween = Tween(begin: offsetBegin, end: offsetEnd).chain(CurveTween(curve: curve));
+      var offsetAnimation = animation.drive(tween);
+
+      return SlideTransition(position: offsetAnimation, child: child);
+    },
+  );
+}
+
+PageRouteBuilder _createSlideTransitionBack(Widget page) {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return page;
+    },
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const offsetBegin = Offset(-1.0, 0.0); // Slide from left to right
+      const offsetEnd = Offset.zero;
+      const curve = Curves.easeInOut;
+
+      var tween = Tween(begin: offsetBegin, end: offsetEnd).chain(CurveTween(curve: curve));
+      var offsetAnimation = animation.drive(tween);
+
+      return SlideTransition(position: offsetAnimation, child: child);
+    },
+  );
 }
 
 class QuestionnaireScreen1 extends StatefulWidget {
@@ -293,7 +348,7 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
             onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const QuestionnaireScreen1()),
+              _createSlideTransitionBack(const QuestionnaireScreen1()),
             );
           },
         ),
@@ -374,7 +429,7 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
           onPressed: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const QuestionnaireScreen2()),
+            _createSlideTransitionBack(const QuestionnaireScreen2()),
           );
         },
       ),
@@ -479,7 +534,7 @@ class _QuestionnaireScreen4State extends State<QuestionnaireScreen4> {
           onPressed: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const QuestionnaireScreen3()),
+            _createSlideTransitionBack(const QuestionnaireScreen3()),
           );
         },
       ),
@@ -567,7 +622,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AvatarCreatorScreen(prefs: prefs)),
+          MaterialPageRoute(builder: (context) => PreAvatarScreen()),
         );
       }
     }
@@ -584,7 +639,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
           onPressed: () {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const QuestionnaireScreen4()),
+            _createSlideTransitionBack(const QuestionnaireScreen4()),
           );
         },
       ),
@@ -668,6 +723,52 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
   }
 }
 
+class PreAvatarScreen extends StatefulWidget {
+  const PreAvatarScreen({super.key});
+
+  @override
+  _PreAvatarScreenState createState() => _PreAvatarScreenState();
+}
+
+class _PreAvatarScreenState extends State<PreAvatarScreen> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Delay navigation by 3 seconds
+    Future.delayed(const Duration(seconds: 3), () async {
+      final prefs = await SharedPreferences.getInstance();
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AvatarCreatorScreen(prefs: prefs)),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        color: Theme.of(context).colorScheme.primary,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Time to create your avatar!',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class AvatarCreatorScreen extends StatefulWidget {
   const AvatarCreatorScreen({super.key, required this.prefs});
 
@@ -738,7 +839,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const QuestionnaireScreen5()),
+              _createSlideTransitionBack(const QuestionnaireScreen5()),
             );
           },
         ),
@@ -766,7 +867,6 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen to text changes in both fields
     _usernameController.addListener(_validateInputs);
     _passwordController.addListener(_validateInputs);
   }
@@ -813,11 +913,14 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const QuestionnaireScreen5()),
-            );
+          onPressed: () async {
+            final prefs = await SharedPreferences.getInstance();
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                _createSlideTransitionBack(AvatarCreatorScreen(prefs: prefs)),
+              );
+            }
           },
         ),
         backgroundColor: Theme.of(context).colorScheme.secondary,
@@ -830,8 +933,6 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
           children: [
             Text("What should we call you?", style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 20),
-
-            // Username TextField
             TextField(
               controller: _usernameController,
               decoration: const InputDecoration(
@@ -842,8 +943,6 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             ),
             const SizedBox(height: 20),
-
-            // Password TextField
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
@@ -862,7 +961,6 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
               textInputAction: TextInputAction.done,
             ),
             const SizedBox(height: 20),
-
             ValueListenableBuilder<bool>(
               valueListenable: _isButtonEnabled,
               builder: (context, isEnabled, child) {
