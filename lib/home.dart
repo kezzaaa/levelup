@@ -3,28 +3,48 @@
 // Packages
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:flutter_3d_controller/flutter_3d_controller.dart';
 
 // Files
 import 'package:levelup/utils.dart';
 
 // HomeScreen displaying the username and avatar
 class HomeScreen extends StatefulWidget {
-  final String username;
   const HomeScreen({super.key, required this.username});
+
+  final String username;
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-    String srcGlb = ''; // Initialize an empty string for the GLB URL
+  Flutter3DController controller = Flutter3DController();
+  String? chosenAnimation;
+  String srcGlb = '';
 
   @override
   void initState() {
     super.initState();
     _loadAvatar();
+
+    // Listen for when the model loads
+    controller.onModelLoaded.addListener(() async {
+      debugPrint('Model loaded: ${controller.onModelLoaded.value}');
+      
+      // Fetch available animations
+      List<String> animations = await controller.getAvailableAnimations();
+      debugPrint('Available animations: $animations');
+
+      if (animations.isNotEmpty) {
+        setState(() {
+          chosenAnimation = animations.first; // Select first animation as default
+        });
+
+        // Play the selected animation
+        controller.playAnimation(animationName: chosenAnimation);
+      }
+    });
   }
 
   // Load avatar data from SharedPreferences and update the UI
@@ -36,10 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         srcGlb = profile.avatarUrl!; // Set the avatar URL for 3D display
       });
-      // Print the avatar URL to the debug console
       debugPrint('Avatar URL: $srcGlb');
     } else {
-      // Handle case where there's no avatar URL found
       debugPrint("No avatar URL found in SharedPreferences");
     }
   }
@@ -60,18 +78,39 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // 3D Avatar taking up 50% of the screen
+          // 3D Avatar with podium underneath using Stack
           SizedBox(
             height: avatarHeight,
-            child: ModelViewer(
-              src: srcGlb,
-              alt: 'A 3D model of your avatar',
-              autoRotate: true,
-              disableZoom: true,
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                Positioned(
+                  bottom: -25,
+                  child: Image.asset(
+                    'assets/images/podium.png',
+                    width: 100,
+                    height: 100,
+                  ),
+                ),
+                // 3D Avatar (Placed After so it's On Top of the podium)
+                SizedBox(
+                  height: avatarHeight * 0.8,
+                  child: Flutter3DViewer(
+                    controller: controller,
+                    src: srcGlb,
+                    onLoad: (String modelAddress) {
+                      debugPrint('Model successfully loaded: $modelAddress');
+                    },
+                    onError: (String error) {
+                      debugPrint('Model failed to load: $error');
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-          
-          // Remaining space (you can add other widgets here)
+
+          // Remaining space for other widgets
           Expanded(
             child: Container(
               color: Theme.of(context).colorScheme.primary,

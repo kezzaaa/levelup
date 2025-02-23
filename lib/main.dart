@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
   final prefs = await SharedPreferences.getInstance();
   
-  await prefs.clear(); // Clears saved data for testing purposes
+  await prefs.clear();
   
   // Check if the user has seen the introduction before
   final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? false;
@@ -152,7 +152,7 @@ class _InitialiseState extends State<Initialise> with SingleTickerProviderStateM
               );
             },
             child: Image.asset(
-              'assets/images/leveluplogo.png', // Logo
+              'assets/images/logo.png', // Logo
               width: 150,
               height: 150,
             ),
