@@ -3,7 +3,7 @@
 // Packages
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_3d_controller/flutter_3d_controller.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 
 // Files
 import 'package:levelup/utils.dart';
@@ -19,7 +19,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Flutter3DController controller = Flutter3DController();
   String? chosenAnimation;
   String srcGlb = '';
 
@@ -27,24 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadAvatar();
-
-    // Listen for when the model loads
-    controller.onModelLoaded.addListener(() async {
-      debugPrint('Model loaded: ${controller.onModelLoaded.value}');
-      
-      // Fetch available animations
-      List<String> animations = await controller.getAvailableAnimations();
-      debugPrint('Available animations: $animations');
-
-      if (animations.isNotEmpty) {
-        setState(() {
-          chosenAnimation = animations.first; // Select first animation as default
-        });
-
-        // Play the selected animation
-        controller.playAnimation(animationName: chosenAnimation);
-      }
-    });
   }
 
   // Load avatar data from SharedPreferences and update the UI
@@ -65,8 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double appBarHeight = kToolbarHeight; // Default AppBar height
-    final double avatarHeight = (screenHeight - appBarHeight) * 0.5; // 50% of remaining space
+    final double avatarHeight = screenHeight * 0.4;
 
     return Scaffold(
       appBar: AppBar(
@@ -78,32 +58,62 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
+
+          // XP bar on top of avatar
+          Padding(
+            padding: const EdgeInsets.only(top: 60.0), // Fixed spacing
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: 10, // XP Bar height
+              child: Stack(
+                children: [
+                  // Background Bar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800, // Dark background
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  // XP Fill (50% full)
+                  FractionallySizedBox(
+                    widthFactor: 0.5,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green, // XP fill color
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // 3D Avatar with podium underneath using Stack
           SizedBox(
-            height: avatarHeight,
+            height: avatarHeight + 100, // Increase height to fit podium
             child: Stack(
-              alignment: Alignment.bottomCenter,
+              alignment: Alignment.center,
               children: [
                 Positioned(
-                  bottom: -25,
+                  bottom: 0, // Set to 0 to ensure podium is fully visible
                   child: Image.asset(
                     'assets/images/podium.png',
-                    width: 100,
-                    height: 100,
+                    width: 125,
+                    height: 125,
                   ),
                 ),
-                // 3D Avatar (Placed After so it's On Top of the podium)
+                // 3D Avatar (Placed after so it's on top of the podium)
                 SizedBox(
-                  height: avatarHeight * 0.8,
-                  child: Flutter3DViewer(
-                    controller: controller,
+                  height: avatarHeight,
+                  child: ModelViewer(
                     src: srcGlb,
-                    onLoad: (String modelAddress) {
-                      debugPrint('Model successfully loaded: $modelAddress');
-                    },
-                    onError: (String error) {
-                      debugPrint('Model failed to load: $error');
-                    },
+                    alt: 'A 3D model of your avatar',
+                    autoRotate: true,
+                    disableZoom: true,
+                    cameraControls: true,
+                    maxCameraOrbit: "Infinity 0deg auto",
+                    minCameraOrbit: "-Infinity 80deg auto",
                   ),
                 ),
               ],

@@ -13,10 +13,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
   final prefs = await SharedPreferences.getInstance();
   
-  await prefs.clear();
+  // await prefs.clear();
   
   // Check if the user has seen the introduction before
-  final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? false;
+  final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? true;
 
   // Run the app and pass whether the user has seen the intro or not
   runApp(MyApp(hasSeenIntro: hasSeenIntro));
