@@ -1,7 +1,7 @@
 <html>
   <head>
     <title>3D Avatar Viewer</title>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8" content="user-scalable=no"/>
     <script type="importmap">
       {
         "imports": {
@@ -11,9 +11,30 @@
         }
       }
     </script>
+    <style>
+      #app {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2; /* Ensures Three.js stays above podium */
+      }
+      #podium {
+        position: absolute;
+        bottom: 2%; /* Adjust height placement */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%; /* Resize podium */
+        max-width: 500px;
+        z-index: 1; /* ⬅️ Move it behind Three.js scene */
+        pointer-events: none; /* Prevents accidental clicks */
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>
+    <img id="podium" src="images/podium.png" alt="Podium">
     <script type="module" src="src/index.js"></script>
   </body>
 </html>

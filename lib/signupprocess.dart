@@ -243,8 +243,8 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
-        elevation: 0, // Optional: remove shadow
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        elevation: 0,
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -275,18 +275,7 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
               });
             },
           ),
-          RadioListTile<String>(
-            title: const Text("Other"),
-            value: "Other",
-            groupValue: _selectedGender,
-            onChanged: (value) {
-              setState(() {
-                _selectedGender = value;
-              });
-            },
-          ),
           const SizedBox(height: 20),
-
           ElevatedButton(
             onPressed: _selectedGender != null ? _saveGenderAndProceed : null,
             child: const Text("Continue"),
@@ -770,9 +759,10 @@ class _PreAvatarScreenState extends State<PreAvatarScreen> {
 }
 
 class AvatarCreatorScreen extends StatefulWidget {
-  const AvatarCreatorScreen({super.key, required this.prefs});
-
   final SharedPreferences prefs;
+  final bool isEditing;
+
+  const AvatarCreatorScreen({super.key, required this.prefs, this.isEditing = false});
 
   @override
   _AvatarCreatorScreenState createState() => _AvatarCreatorScreenState();
@@ -809,21 +799,27 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
       ..addJavaScriptChannel(
         "AvatarCreated",
         onMessageReceived: (JavaScriptMessage message) async {
-          // Save avatar to SharedPreferences
+          // ✅ Save avatar to SharedPreferences
           await widget.prefs.setString('avatar', message.message);
 
-          // Retrieve and process avatar data
+          debugPrint('✅ Avatar URL Saved: ${message.message}');
+
+          // ✅ Retrieve and process avatar data
           final user = userFromPrefs(widget.prefs);
           if (user != null) {
-            debugPrint('Avatar URL: ${user.avatarUrl}');
-
-            // Navigate to UsernamePasswordScreen
+            debugPrint('✅ Avatar URL Loaded: ${user.avatarUrl}');
             if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const UsernamePasswordScreen()),
-              );
+              if (widget.isEditing) {
+                Navigator.pop(context, true); // ✅ Go back and return a value to trigger reload
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UsernamePasswordScreen()),
+                );
+              }
             }
+          } else {
+            debugPrint("❌ No avatar found in SharedPreferences");
           }
         },
       )
@@ -837,16 +833,25 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              _createSlideTransitionBack(const QuestionnaireScreen5()),
-            );
+            if (widget.isEditing) {
+              // ✅ If editing, pop back to HomeScreen and trigger a refresh
+              Navigator.pop(context, true);
+            } else {
+              // ✅ If signing up, go back to questionnaire
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const QuestionnaireScreen5()),
+              );
+            }
           },
         ),
         backgroundColor: Theme.of(context).colorScheme.secondary,
         elevation: 0,
       ),
-      body: WebViewWidget(controller: _webViewController),
+      body: GestureDetector(
+        onVerticalDragUpdate: (_) {},
+        child: WebViewWidget(controller: _webViewController),
+      ),
     );
   }
 }

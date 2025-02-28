@@ -30,7 +30,7 @@ class _NavigationState extends State<Navigation> {
     _pages.addAll([
       ProfileScreen(),
       SocialScreen(),
-      HomeScreen(username: _username), // Pass the actual username here
+      HomeScreen(username: _username, shouldReload: false, isEditing: false,),
       MissionsScreen(),
       ProgressScreen(),
     ]);
