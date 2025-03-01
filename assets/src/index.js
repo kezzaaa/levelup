@@ -74,29 +74,22 @@ function loadGLBModel(glbUrl) {
     function (gltf) {
       console.log("✅ GLB Model Loaded Successfully!");
       avatar = gltf.scene;
-      avatar.position.set(0, 0, 0); // ✅ Keep avatar centered
-      scene.add(avatar);
+      avatar.position.set(0, 0, 0);
+      avatar.visible = false; // ✅ Hide avatar until animation is ready
+
       mixer = new THREE.AnimationMixer(avatar);
 
-      // ✅ Select animation based on gender
       const genderBasedAnimation = userGender === "female" ? "f_idle.fbx" : "m_idle.fbx";
+      console.log(`🎭 Gender: ${userGender} → Loading animation: ${genderBasedAnimation}`);
 
-      console.log(`🎭 Gender: ${userGender} → Playing animation: ${genderBasedAnimation}`);
-
-      // ✅ Load only the relevant idle animation
-      loadFBXAnimation(new FBXLoader(), genderBasedAnimation);
-
-      // ✅ Enable Rotation Controls
-      enableTouchRotation();
-
-      // ✅ Allow switching animations using keys
-      window.addEventListener("keydown", (event) => {
-        if (event.key === "1") {
-          playAnimation("f_idle.fbx");
-        } else if (event.key === "2") {
-          playAnimation("m_idle.fbx");
-        }
+      loadFBXAnimation(new FBXLoader(), genderBasedAnimation, () => {
+        avatar.visible = true; // ✅ Reveal avatar
+        scene.add(avatar); // ✅ Add avatar to scene
+        hideLoadingText(); // ✅ Hide loading text
+        console.log("🎬 Avatar fully loaded with idle animation!");
       });
+
+      enableTouchRotation();
     },
     undefined,
     function (error) {
@@ -115,45 +108,43 @@ window.setUserGender = function (gender) {
 };
 
 // ✅ Function to load FBX animations
-function loadFBXAnimation(loader, file) {
-    const filePath = `https://localhost/assets/animations/${file}`;
-    console.log(`⏳ Fetching animation: ${filePath}`);
-  
-    loader.load(
-      filePath,
-      function (fbx) {
-        console.log(`✅ ${file} Animation Loaded!`);
-        
-        let fbxAnimation = fbx.animations[0];
-  
-        // ✅ Fix scale issue for position keyframes
-        fbxAnimation.tracks.forEach((track) => {
-          if (track.name.includes("position")) {
-            track.values.forEach((v, i) => {
-              track.values[i] = v / 100; // ✅ Scale down 100x if animation is too big
-            });
-          }
-        });
-  
-        if (avatar) {
-          let modelBones = avatar.children[0].skeleton ? avatar.children[0] : avatar;
-          
-          animations[file] = mixer.clipAction(fbxAnimation, modelBones);
-          animations[file].setLoop(THREE.LoopRepeat);
+function loadFBXAnimation(loader, file, onReady) {
+  const filePath = `https://localhost/assets/animations/${file}`;
+  console.log(`⏳ Fetching animation: ${filePath}`);
 
-          console.log(`📌 Animation "${file}" assigned to avatar correctly.`);
+  loader.load(
+    filePath,
+    function (fbx) {
+      console.log(`✅ ${file} Animation Loaded!`);
+      let fbxAnimation = fbx.animations[0];
 
-          // ✅ Auto-play idle animation
-          playAnimation(file);
-        } else {
-          console.error("❌ Avatar not found for animation!");
+      // ✅ Fix position scale issues
+      fbxAnimation.tracks.forEach((track) => {
+        if (track.name.includes("position")) {
+          track.values.forEach((v, i) => {
+            track.values[i] = v / 100;
+          });
         }
-      },
-      undefined,
-      function (error) {
-        console.error(`❌ FBX Load Error (${file}):`, error);
+      });
+
+      if (avatar) {
+        let modelBones = avatar.children[0].skeleton ? avatar.children[0] : avatar;
+        animations[file] = mixer.clipAction(fbxAnimation, modelBones);
+        animations[file].setLoop(THREE.LoopRepeat);
+        animations[file].play(); // ✅ Ensure animation starts before showing the avatar
+
+        console.log(`📌 Animation "${file}" assigned and playing.`);
+
+        if (onReady) onReady(); // ✅ Callback to reveal avatar once animation is playing
+      } else {
+        console.error("❌ Avatar not found for animation!");
       }
-    );
+    },
+    undefined,
+    function (error) {
+      console.error(`❌ FBX Load Error (${file}):`, error);
+    }
+  );
 }
 
 // ✅ Function to switch animations

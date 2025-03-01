@@ -68,27 +68,32 @@ class AvatarCreatorScreen extends StatefulWidget {
 
 class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
   late WebViewController _webViewController;
+  bool _showOverlay = true; // ✅ Starts with overlay visible
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ Initialize WebViewController first
+    // ✅ Show overlay for 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showOverlay = false; // ✅ Hide overlay after delay
+        });
+      }
+    });
+
+    // ✅ Initialize WebViewController
     _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF212121))
       ..setNavigationDelegate(
         NavigationDelegate(
-          onProgress: (int progress) {
-            debugPrint("Loading progress: $progress%");
-          },
           onPageStarted: (String url) {
             debugPrint("Page started loading: $url");
           },
           onPageFinished: (String url) {
             debugPrint("Page finished loading: $url");
-
-            // ✅ Ensure WebView is fully loaded before sending token
             loadGuestSession();
           },
           onWebResourceError: (WebResourceError error) {
@@ -110,7 +115,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
             debugPrint('✅ Avatar URL Loaded: ${user.avatarUrl}');
             if (mounted) {
               if (widget.isEditing) {
-                Navigator.pop(context, true); // ✅ Go back and return a value to trigger reload
+                Navigator.pop(context, true); // ✅ Go back and trigger reload
               } else {
                 Navigator.pushReplacement(
                   context,
@@ -182,9 +187,33 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
         backgroundColor: Theme.of(context).colorScheme.secondary,
         elevation: 0,
       ),
-      body: GestureDetector(
-        onVerticalDragUpdate: (_) {},
-        child: WebViewWidget(controller: _webViewController),
+      body: Stack(
+        children: [
+          // ✅ WebView in the background
+          WebViewWidget(controller: _webViewController),
+
+          // ✅ Fullscreen overlay (Shows for 3 seconds, then disappears)
+          if (_showOverlay)
+            Container(
+              color: Color(0xFF212121), // 🔥 Fullscreen overlay
+              alignment: Alignment.center,
+              padding: EdgeInsets.only(bottom: 150), // ✅ Adjust this value to move text higher
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // ✅ Ensures the content takes minimum space
+                children: [
+                  CircularProgressIndicator( // 🔥 Loading animation
+                    color: Colors.white, // ✅ Match the theme
+                    strokeWidth: 3, // ✅ Adjust thickness
+                  ),
+                  SizedBox(height: 20), // ✅ Spacing between loader & text
+                  Text(
+                    "Loading...",
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

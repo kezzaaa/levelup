@@ -826,7 +826,7 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
               valueListenable: _isButtonEnabled,
               builder: (context, isEnabled, child) {
                 return ElevatedButton(
-                  onPressed: isEnabled ? _createAccount : null,
+                  onPressed: isEnabled ? _createAccount : null, 
                   child: const Text("Create Account"),
                 );
               },

@@ -107,14 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
           "Welcome, ${widget.username}!",
           style: const TextStyle(color: Colors.white),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              webViewController?.reload();
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [

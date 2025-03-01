@@ -14,11 +14,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized(); 
   final prefs = await SharedPreferences.getInstance();
   
-  // Clear SharedPreferences for testing
-  await prefs.clear();
+  // Clear SharedPreferences for wiping user data and starting from beginning
+  // await prefs.clear();
   
   // Create and print user on start
-  createGuestUser();
+  String? userId = await createGuestUser();
+  debugPrint("🆔 Loaded guest user ID: $userId");
 
   // Toggle if the user has seen the introduction before
   final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? false;
@@ -105,26 +106,24 @@ class _InitialiseState extends State<Initialise> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    // Initialize the AnimationController
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1), // Duration for the pulse effect
-      lowerBound: 0.8, // The smallest scale factor
-      upperBound: 1.0, // The largest scale factor should be 1.0 for a normal scale
-    )..repeat(reverse: true); // Repeat the animation in reverse
+      duration: const Duration(seconds: 1),
+      lowerBound: 0.8,
+      upperBound: 1.0,
+    )..repeat(reverse: true); // ✅ Loop animation smoothly
 
-    // Define the scale animation
     _scaleAnimation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeInOut, // Add a smooth ease-in-out curve
+      curve: Curves.easeInOut,
     );
 
-    // After a 3-second delay, navigate to the appropriate screen
+    // ✅ Navigate after 3 seconds, keeping animation active
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
-          // If user has seen the intro, go straight to login
-          // Otherwise, start the introduction flow
+          _controller.stop(); // ✅ Stop animation before navigating
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
