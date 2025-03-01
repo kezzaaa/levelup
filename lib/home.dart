@@ -1,4 +1,4 @@
-// ignore: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api
 
 // Packages
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 
 // Files
 import 'utils.dart';
-import 'signupprocess.dart';
+import 'avatarcreator.dart';
 
 // ignore: must_be_immutable
 class HomeScreen extends StatefulWidget {
@@ -19,7 +19,6 @@ class HomeScreen extends StatefulWidget {
   HomeScreen({super.key, required this.username, required this.shouldReload, required this.isEditing});
 
   @override
-  // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
 }
 

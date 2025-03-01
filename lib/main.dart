@@ -7,16 +7,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Files
 import 'package:levelup/signupprocess.dart';
+import 'utils.dart';
 
 void main() async {
   // Ensure Flutter is initialized before fetching SharedPreferences
   WidgetsFlutterBinding.ensureInitialized(); 
   final prefs = await SharedPreferences.getInstance();
   
-  // await prefs.clear();
+  // Clear SharedPreferences for testing
+  await prefs.clear();
   
-  // Check if the user has seen the introduction before
-  final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? true;
+  // Create and print user on start
+  createGuestUser();
+
+  // Toggle if the user has seen the introduction before
+  final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? false;
 
   // Run the app and pass whether the user has seen the intro or not
   runApp(MyApp(hasSeenIntro: hasSeenIntro));

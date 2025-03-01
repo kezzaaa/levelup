@@ -8,29 +8,66 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Avatar Creator</title>
     <style>
-        html,
-        body,
+        html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* ✅ Prevents scrolling issues */
+        }
+
         .frame {
             width: 100%;
-            height: 100%;
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans,
-                Droid Sans, Helvetica Neue, sans-serif;
-            font-size: 14px;
+            height: calc(100% - 5%); /* ✅ Shrinks iFrame correctly */
             border: none;
+        }
+
+        .bottom-space {
+            width: 100%;
+            height: 5%;
+            background-color: #1C1C1C;
         }
     </style>
 </head>
 
 <body>
     <iframe id="frame" class="frame" allow="camera *; microphone *; clipboard-write"></iframe>
-
+    <div class="bottom-space"></div>
     <script>
+        let token; 
         const subdomain = '25210394-sz5yd2';
         const frame = document.getElementById('frame');
 
-        // ✅ Original Working ReadyPlayerMe URL
-        frame.src = `https://${subdomain}.readyplayer.me/avatar?frameApi&clearCache=true`;
+        // ✅ Listen for token from Flutter
+        window.addEventListener('message', function(event) {
+            console.log("📥 [DEBUG] Message received in WebView:", event.data);
+
+            try {
+                const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data; // ✅ Fix: Properly parse JSON
+
+                if (data?.type === "setToken") {
+                    token = data.token;
+                    console.log(`✅ [DEBUG] Received token: ${token}`);
+
+                    // ✅ Load the correct iFrame URL with token
+                    frame.src = `https://${subdomain}.readyplayer.me/avatar?frameApi&token=${token}`;
+                    console.log(`🌍 [DEBUG] Loading iframe URL: ${frame.src}`);
+                }
+            } catch (error) {
+                console.error("❌ [DEBUG] Failed to parse message:", error);
+            }
+        });
+
+            function parse(event) {
+                try {
+                    return JSON.parse(event.data);
+                } catch (error) {
+                    console.log("❌ Failed to parse message:", error); // 🔍 Debugging
+                    return null;
+                }
+            }
 
         window.addEventListener('message', subscribe);
         document.addEventListener('message', subscribe);
@@ -78,5 +115,4 @@
         };
     </script>
 </body>
-
 </html>
