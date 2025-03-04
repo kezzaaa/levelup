@@ -26,11 +26,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/podium.png
-    - assets/images/logo.png
-    - assets/iframe.html
-    - assets/viewer.html
-    - assets/src/index.js
-    - assets/animations/f_idle.fbx
-    - assets/animations/m_idle.fbx
+    - assets/
+    - assets/images/
+    - assets/src/
+    - assets/animations/male/idle/
+    - assets/animations/female/idle/
+    - assets/animations/male/dance/
+    - assets/animations/female/dance/
 

@@ -58,7 +58,7 @@ function initScene() {
 
   // ✅ Create Static Camera
   camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-  camera.position.set(0, 1.2, 3);
+  camera.position.set(0, 1.2, 2.8);
   camera.lookAt(0, 1, 0); // ✅ Focuses on avatar
 
   animate();
@@ -75,17 +75,18 @@ function loadGLBModel(glbUrl) {
       console.log("✅ GLB Model Loaded Successfully!");
       avatar = gltf.scene;
       avatar.position.set(0, 0, 0);
-      avatar.visible = false; // ✅ Hide avatar until animation is ready
+      avatar.scale.set(1, 1, 1);
+      avatar.visible = false;
 
       mixer = new THREE.AnimationMixer(avatar);
 
-      const genderBasedAnimation = userGender === "female" ? "f_idle.fbx" : "m_idle.fbx";
+      const genderBasedAnimation = userGender === "female" ? "F_Idle.fbx" : "M_Idle.fbx";
       console.log(`🎭 Gender: ${userGender} → Loading animation: ${genderBasedAnimation}`);
 
-      loadFBXAnimation(new FBXLoader(), genderBasedAnimation, () => {
-        avatar.visible = true; // ✅ Reveal avatar
-        scene.add(avatar); // ✅ Add avatar to scene
-        hideLoadingText(); // ✅ Hide loading text
+      loadFBXAnimation(new FBXLoader(), genderBasedAnimation, "idle", () => {
+        avatar.visible = true; 
+        scene.add(avatar);
+        hideLoadingText();
         console.log("🎬 Avatar fully loaded with idle animation!");
       });
 
@@ -93,7 +94,7 @@ function loadGLBModel(glbUrl) {
     },
     undefined,
     function (error) {
-      console.error("❌ GLB Load Error:", error);
+      console.error(`❌ GLB Load Error:`, error);
     }
   );
 }
@@ -108,8 +109,10 @@ window.setUserGender = function (gender) {
 };
 
 // ✅ Function to load FBX animations
-function loadFBXAnimation(loader, file, onReady) {
-  const filePath = `https://localhost/assets/animations/${file}`;
+function loadFBXAnimation(loader, file, animationType = "idle", onReady) {
+  const genderFolder = userGender === "female" ? "female" : "male";
+  const filePath = `https://localhost/assets/animations/${genderFolder}/${animationType}/${file}`;
+  
   console.log(`⏳ Fetching animation: ${filePath}`);
 
   loader.load(
@@ -131,13 +134,13 @@ function loadFBXAnimation(loader, file, onReady) {
         let modelBones = avatar.children[0].skeleton ? avatar.children[0] : avatar;
         animations[file] = mixer.clipAction(fbxAnimation, modelBones);
         animations[file].setLoop(THREE.LoopRepeat);
-        animations[file].play(); // ✅ Ensure animation starts before showing the avatar
+        animations[file].play();
 
         console.log(`📌 Animation "${file}" assigned and playing.`);
 
-        if (onReady) onReady(); // ✅ Callback to reveal avatar once animation is playing
+        if (onReady) onReady();
       } else {
-        console.error("❌ Avatar not found for animation!");
+        console.error(`❌ Avatar not found for animation!`);
       }
     },
     undefined,
@@ -164,26 +167,60 @@ function playAnimation(name) {
 }
 
 // ✅ Animation loop
+let clock = new THREE.Clock();
+
 function animate() {
     requestAnimationFrame(animate);
-  
-    if (mixer) mixer.update(0.02);
+    
+    let deltaTime = clock.getDelta();
+    if (mixer) mixer.update(deltaTime);
 
-    // ✅ Smoothly interpolate rotation
     if (avatar) {
       avatar.rotation.y += rotationVelocity;
-      rotationVelocity *= rotationDamping; // ✅ Smooth easing (damping)
-
-      // ✅ Prevent extreme fast spinning
+      rotationVelocity *= rotationDamping;
       rotationVelocity = Math.max(Math.min(rotationVelocity, 0.05), -0.05);
     }
 
     renderer.render(scene, camera);
 }
 
+globalThis.playRandomDanceAnimation = function () {
+  playRandomDanceAnimation();
+};
+
+// ✅ Function to randomly select and play a dance animation once
+function playRandomDanceAnimation() {
+  const genderFolder = userGender === "female" ? "female" : "male";
+  const danceFiles = userGender === "female"
+    ? ["F_Dances_001.fbx", "F_Dances_004.fbx", "F_Dances_005.fbx", "F_Dances_006.fbx", "F_Dances_007.fbx"]
+    : ["M_Dances_001.fbx", "M_Dances_003.fbx", "M_Dances_004.fbx", 
+       "M_Dances_005.fbx", "M_Dances_006.fbx", "M_Dances_007.fbx", "M_Dances_008.fbx", 
+       "M_Dances_009.fbx", "M_Dances_011.fbx"];
+
+  const randomIndex = Math.floor(Math.random() * danceFiles.length);
+  const randomDanceFile = danceFiles[randomIndex];
+
+  console.log(`🕺 Selecting random dance animation: ${randomDanceFile}`);
+
+  loadFBXAnimation(new FBXLoader(), randomDanceFile, "dance", () => {
+    console.log(`🎬 Now playing: ${randomDanceFile}`);
+
+    playAnimation(randomDanceFile);
+
+    // ✅ Get animation duration and return to idle
+    const duration = animations[randomDanceFile]._clip.duration * 1000;
+
+    setTimeout(() => {
+      console.log("💤 Dance animation finished, returning to idle...");
+      const idleAnimation = userGender === "female" ? "F_Idle.fbx" : "M_Idle.fbx";
+      playAnimation(idleAnimation);
+    }, duration);
+  });
+}
+
 // ✅ Reload scene on WebView refresh
 window.addEventListener("load", () => {
-  console.log("🔄 WebView Reloaded, waiting for GLB URL from Flutter...");
+  console.log(`🔄 WebView Reloaded, waiting for GLB URL from Flutter...`);
   initScene();
 });
 

@@ -25,11 +25,11 @@
       }
       #podium {
         position: absolute;
-        bottom: 0%; /* Adjust height placement */
+        bottom: -5%; /* Adjust height placement */
         left: 50%;
         transform: translateX(-50%);
         width: 100%; /* Resize podium */
-        max-width: 600px;
+        max-width: 725px;
         z-index: 1; /* ⬅️ Move it behind Three.js scene */
         pointer-events: none; /* Prevents accidental clicks */
       }
@@ -61,8 +61,11 @@
 
       // ✅ Function to hide loading text once avatar loads
       function hideLoadingText() {
-            loadingText.style.display = "none"; // 🔥 Hides the loading animation
+        let loadingDots = document.getElementById("loadingDots");
+        if (loadingDots) {
+            loadingDots.style.display = "none"; // ✅ Hides the entire loading element
         }
+    }
     </script>
     <img id="podium" src="images/podium.png" alt="Podium">
     <script type="module" src="src/index.js"></script>

@@ -12,35 +12,70 @@ import 'package:levelup/missions.dart';
 import 'package:levelup/progress.dart';
 
 class Navigation extends StatefulWidget {
-  const Navigation({super.key});
+  final int newIndex; // ✅ Correct parameter
+
+  const Navigation({super.key, this.newIndex = 2}); // ✅ Default to home tab
 
   @override
   _NavigationState createState() => _NavigationState();
 }
 
 class _NavigationState extends State<Navigation> {
+  late int _selectedIndex;
+  String _username = "User"; // ✅ Ensure default value
 
-  // List of screens corresponding to the tabs
-  final List<Widget> _pages = [];
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.newIndex; // ✅ Assign selected index from constructor
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _username = prefs.getString('username') ?? "User"; // ✅ Load stored username
+    });
+  }
+
+  void _onItemTapped(int index) {
+    if (index == _selectedIndex) return; // ✅ Prevent redundant navigation
+
+    Navigator.of(context).pushReplacement(_createRoute(index));
+  }
+
+  PageRouteBuilder _createRoute(int index) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          Navigation(newIndex: index), // ✅ Pass index correctly
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final begin = Offset(index > _selectedIndex ? 1.0 : -1.0, 0.0); // ✅ Slide Left/Right
+        final end = Offset.zero;
+        final tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeInOut));
+        final offsetAnimation = animation.drive(tween);
+
+        return SlideTransition(position: offsetAnimation, child: child);
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Update _pages after the username has been loaded
-    _pages.clear();
-    _pages.addAll([
+    final List<Widget> _pages = [
       ProfileScreen(),
       SocialScreen(),
-      HomeScreen(username: _username, shouldReload: false, isEditing: false,),
+      HomeScreen(username: _username, shouldReload: false, isEditing: false),
       MissionsScreen(),
       ProgressScreen(),
-    ]);
+    ];
 
     return Scaffold(
-      body: _pages[_selectedIndex], // Display selected page based on index
+      body: _pages[_selectedIndex], // ✅ Ensure the correct tab is displayed
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex, // Ensure it highlights the selected tab
-        onTap: _onItemTapped, // Handle tab selection
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         backgroundColor: Theme.of(context).colorScheme.secondary,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey,
@@ -53,27 +88,5 @@ class _NavigationState extends State<Navigation> {
         ],
       ),
     );
-  }
-
-  String _username = ""; // Default is an empty string
-  int _selectedIndex = 2; // Default to 'Home' tab
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUsername(); // Load the username when the screen is initialized
-  }
-
-  Future<void> _loadUsername() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _username = prefs.getString('username') ?? "User"; // Default to "User" if null
-    });
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
   }
 }

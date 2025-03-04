@@ -2,6 +2,7 @@
 
 // Packages
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Missions Screen
 class MissionsScreen extends StatefulWidget {
@@ -29,6 +30,75 @@ class _MissionsScreenState extends State<MissionsScreen> {
   String _systemFilter = 'daily';
 
   final ScrollController _userScrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkFirstTimeUser();
+  }
+
+  // ✅ Function to check if user has seen mission tutorial before
+  Future<void> _checkFirstTimeUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasSeenTutorial = prefs.getBool('hasSeenMissionTutorial') ?? false;
+
+    if (!hasSeenTutorial) {
+      // ✅ Show tutorial pop-up
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showMissionTutorialTip(context);
+      });
+
+      // ✅ Mark tutorial as seen
+      await prefs.setBool('hasSeenMissionTutorial', true);
+    }
+  }
+
+  // ✅ Function to show missions tutorial pop-up
+  void _showMissionTutorialTip(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), // ✅ Rounded corners
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF212121), // ✅ Dialog background
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white, width: 1), // ✅ White border
+            ),
+            padding: const EdgeInsets.all(16), // ✅ Adds spacing inside the box
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // ✅ Ensures dialog wraps content
+              children: [
+                const Text(
+                  "How to Use Missions",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "• Complete daily, weekly, and monthly missions to earn rewards.\n"
+                  "• Tap a mission to expand details and track progress.\n"
+                  "• Swipe left on user-created missions to delete them.\n"
+                  "• Press the '+ Add' button to create custom missions!\n\n"
+                  "Start your journey now!",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Got it!"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _addMission() {
     TextEditingController controller = TextEditingController();
@@ -105,8 +175,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
   }
 
   void _refreshMission(int index, bool isUserMission) {
-    // TODO: Implement mission refresh logic here
-    print("Mission at index $index refreshed (${isUserMission ? "User" : "System"})");
+    debugPrint("Mission at index $index refreshed (${isUserMission ? "User" : "System"})");
   }
 
   void _deleteMission(int index) {

@@ -95,6 +95,12 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
           onPageFinished: (String url) {
             debugPrint("Page finished loading: $url");
             loadGuestSession();
+          // ✅ Show Avatar Creator Tip ONLY during signup (not editing)
+          if (!widget.isEditing) {
+            Future.delayed(const Duration(milliseconds: 500), () { // Small delay to ensure rendering
+              if (mounted) _showAvatarCreatorTip(context);
+            });
+          }
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint("WebView error: ${error.description}");
@@ -129,6 +135,49 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
         },
       )
       ..loadFlutterAsset("assets/iframe.html");
+  }
+
+  // ✅ Function to show avatar tutorial pop-up
+  void _showAvatarCreatorTip(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), // ✅ Rounded corners
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF212121), // ✅ Dialog background
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white, width: 1), // ✅ White border added here
+            ),
+            padding: const EdgeInsets.all(16), // ✅ Adds space inside the box
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // ✅ Makes dialog wrap content
+              children: [
+                const Text(
+                  "How to Use the Avatar Creator",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Use the leftmost icon to edit your avatar’s gender/body type. You can also randomize the appearance.\n\n"
+                  "Tap on different icons to change your avatar’s appearance, and press 'Next →' when done!",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Got it!"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> loadGuestSession() async {
