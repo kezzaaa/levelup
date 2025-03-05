@@ -90,6 +90,10 @@ Future<String?> getSessionToken(String userId) async {
   }
 }
 
+  int getXpThresholdForLevel(int level) {
+    return level * 10;
+  }
+
 class ProfileData {
   ProfileData(this.avatarUrl);
   final String? avatarUrl;

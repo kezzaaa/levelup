@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Files
 import 'package:levelup/signupprocess.dart';
-import 'utils.dart';
+import 'userutils.dart';
 
 void main() async {
   // Ensure Flutter is initialized before fetching SharedPreferences
@@ -16,6 +16,11 @@ void main() async {
   
   // Clear SharedPreferences for wiping user data and starting from beginning
   // await prefs.clear();
+
+  // Clear XP for testing purposes
+  await prefs.setInt('userXP', 0); // Reset XP to 0
+  await prefs.setInt('userLevel', 1); // Reset level to 1
+  await prefs.setStringList('completedMissions', []); // Reset missions
   
   // Create and print user on start
   String? userId = await createGuestUser();

@@ -1,8 +1,12 @@
 // ignore_for_file: library_private_types_in_public_api
 
 // Packages
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// Files
+import 'userutils.dart';
 
 // Missions Screen
 class MissionsScreen extends StatefulWidget {
@@ -34,8 +38,8 @@ class _MissionsScreenState extends State<MissionsScreen> {
   @override
   void initState() {
     super.initState();
-
     _checkFirstTimeUser();
+    _unloadCompletedMissions();
   }
 
   // ✅ Function to check if user has seen mission tutorial before
@@ -152,26 +156,75 @@ class _MissionsScreenState extends State<MissionsScreen> {
     });
   }
 
-  void _toggleMission(int index, bool isUserMission) {
-    setState(() {
-      if (isUserMission) {
-        _userMissions[index]['completed'] = true;
-        _userMissions[index]['removing'] = true;
-      } else {
+  void _toggleMission(int index, bool isUserMission) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> completedMissions = prefs.getStringList('completedMissions') ?? [];
+
+    if (!isUserMission) {
+      String missionTitle = _systemMissions[index]['title'];
+
+      setState(() {
         _systemMissions[index]['completed'] = true;
         _systemMissions[index]['removing'] = true;
+      });
+
+      if (!completedMissions.contains(missionTitle)) {
+        completedMissions.add(missionTitle);
+        await prefs.setStringList('completedMissions', completedMissions);
       }
-    });
+    
+      int xpReward = _systemMissions[index]['experience'];
+      completeMission(xpReward);
+    }
 
     Future.delayed(const Duration(milliseconds: 500), () {
-      setState(() {
-        if (isUserMission && index < _userMissions.length && _userMissions[index]['removing']) {
-          _userMissions.removeAt(index);
-        } else if (!isUserMission && index < _systemMissions.length && _systemMissions[index]['removing']) {
-          _systemMissions.removeAt(index);
-        }
-      });
+      if (mounted) {
+        setState(() {
+          if (isUserMission && index < _userMissions.length && _userMissions[index]['removing']) {
+            _userMissions.removeAt(index);
+          } else if (!isUserMission && index < _systemMissions.length && _systemMissions[index]['removing']) {
+            _systemMissions.removeAt(index);
+          }
+        });
+      }
     });
+  }
+
+  Future<void> _unloadCompletedMissions() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> completedMissions = prefs.getStringList('completedMissions') ?? [];
+
+    setState(() {
+      _systemMissions.removeWhere((mission) => completedMissions.contains(mission['title']));
+    });
+  }
+
+  void completeMission(int xpReward) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    int currentXP = prefs.getInt('userXP') ?? 0;
+    int currentLevel = prefs.getInt('userLevel') ?? 1;
+
+    currentXP += xpReward;
+    int xpThreshold = getXpThresholdForLevel(currentLevel);
+
+    while (currentXP >= xpThreshold) {
+      currentXP -= xpThreshold;
+      currentLevel++;
+      xpThreshold = getXpThresholdForLevel(currentLevel);
+    }
+
+    await prefs.setInt('userXP', currentXP);
+    await prefs.setInt('userLevel', currentLevel);
+
+    debugPrint("✅ Mission completed! New XP: $currentXP, Level: $currentLevel");
+
+    // ✅ Notify `home.dart` to update XP bar
+    // ignore: use_build_context_synchronously
+    if (Navigator.canPop(context)) {
+      // ignore: use_build_context_synchronously
+      Navigator.pop(context, xpReward); // Send XP reward back to HomeScreen
+    }
   }
 
   void _refreshMission(int index, bool isUserMission) {
@@ -184,23 +237,38 @@ class _MissionsScreenState extends State<MissionsScreen> {
     });
   }
 
-  Widget _buildFilterButton(String text, String type, bool isUserFilter) {
-    bool isActive = isUserFilter ? (_userFilter == type) : (_systemFilter == type);
-    return SizedBox(
-      width: 60,
-      height: 25,
-      child: TextButton(
-        onPressed: () => isUserFilter ? _setUserFilter(type) : _setSystemFilter(type),
-        style: TextButton.styleFrom(
-          backgroundColor: isActive ? Colors.white : Colors.transparent,
-          foregroundColor: isActive ? Colors.black : Colors.white,
-          side: const BorderSide(color: Colors.white),
-          padding: const EdgeInsets.all(2),
-        ),
-        child: Text(text, style: const TextStyle(fontSize: 10)),
+Widget _buildFilterButton(String text, String type, bool isUserFilter) {
+  bool isActive = isUserFilter ? (_userFilter == type) : (_systemFilter == type);
+  
+  return SizedBox(
+    width: 60,
+    height: 25,
+    child: TextButton(
+      onPressed: () {
+        setState(() {
+          if (isUserFilter) {
+            _setUserFilter(type);
+            for (var mission in _userMissions) {
+              mission['expanded'] = false;
+            } // Close all expanded missions
+          } else {
+            _setSystemFilter(type);
+            for (var mission in _systemMissions) {
+              mission['expanded'] = false;
+            } // Close all expanded missions
+          }
+        });
+      },
+      style: TextButton.styleFrom(
+        backgroundColor: isActive ? Colors.white : Colors.transparent,
+        foregroundColor: isActive ? Colors.black : Colors.white,
+        side: const BorderSide(color: Colors.white),
+        padding: const EdgeInsets.all(2),
       ),
-    );
-  }
+      child: Text(text, style: const TextStyle(fontSize: 10)),
+    ),
+  );
+}
 
   void _showCompletedMissions(BuildContext context) {
     List<Map<String, dynamic>> completedMissions = [
@@ -265,7 +333,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
         color: isUserMission ? Colors.red : Colors.green,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Icon(Icons.refresh, color: Colors.white),
+        child: isUserMission ? Icon(Icons.delete_sweep_rounded, color: Colors.white) : Icon(Icons.refresh, color: Colors.white,),
       ),
       onDismissed: (_) {
         _refreshMission(index, isUserMission);
@@ -315,21 +383,38 @@ class _MissionsScreenState extends State<MissionsScreen> {
                         // ⭐ Difficulty Rating System
                         Row(
                           children: List.generate(3, (i) {
-                            return Icon(
-                              i < difficulty ? Icons.star : Icons.star_border,
-                              color: i < difficulty ? Colors.yellow : Colors.white,
-                              size: 20,
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // 🔲 White Outline (Always visible)
+                                Icon(
+                                  Icons.star_outline_rounded,
+                                  color: Colors.white, // White border
+                                  size: 44, // Slightly larger than main star
+                                ),
+                                // ⭐ Filled Star (Yellow) or Transparent Border for Empty Stars
+                                Icon(
+                                  i < difficulty ? Icons.star_rounded : Icons.star_border_rounded,
+                                  color: i < difficulty ? const Color.fromARGB(255, 239, 215, 0) : Colors.transparent, // Filled if active, transparent if not
+                                  size: 35, // Main star size
+                                ),
+                              ],
                             );
                           }),
                         ),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // 🔵 XP Indicator (Blue Circle)
+                            // XP Indicator (Blue Circle)
                             Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: Colors.blue,
+                              width: 33, // Fixed width
+                              height: 33, // Fixed height
+                              alignment: Alignment.center, // Ensure text stays centered
+                              decoration: BoxDecoration(
+                                color: Colors.cyan,
                                 shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
                               ),
                               child: Text(
                                 "$xp",
@@ -339,25 +424,33 @@ class _MissionsScreenState extends State<MissionsScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8), // Spacing between XP and Skill Triangle
-                            // 🔺 Skill Point Triangle (Only show if skillPoints > 0)
-                            if (skillPoints > 0)
-                              ClipPath(
-                                clipper: TriangleClipper(),
-                                child: Container(
-                                  width: 25,
-                                  height: 25,
-                                  color: skillColor, // Dynamic color based on skill sector
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    "$skillPoints",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                            const SizedBox(width: 5), // Adjust spacing between XP and triangle
+
+                            // 🔺 Triangle and Number Wrapped in Stack
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Move triangle left
+                                Transform.translate(
+                                  offset: const Offset(0, 2), // Adjust the X offset (- moves left)
+                                  child: CustomPaint(
+                                    size: const Size(40, 40), // Adjusted size
+                                    painter: RoundedTrianglePainter(
+                                      fillColor: skillColor,
+                                      borderColor: Colors.white,
                                     ),
                                   ),
                                 ),
-                              ),
+                                // Skill points number
+                                Text(
+                                  "$skillPoints",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ],
@@ -502,17 +595,59 @@ class _MissionsScreenState extends State<MissionsScreen> {
   }
 }
 
-class TriangleClipper extends CustomClipper<Path> {
+class RoundedTrianglePainter extends CustomPainter {
+  final Color fillColor;
+  final Color borderColor;
+  final double borderWidth;
+  final double cornerRadius;
+
+  RoundedTrianglePainter({
+    required this.fillColor,
+    this.borderColor = Colors.white,
+    this.borderWidth = 4.0, // Outline thickness
+    this.cornerRadius = 4.0, // Adjust this for roundness
+  });
+
   @override
-  Path getClip(Size size) {
-    Path path = Path();
-    path.moveTo(size.width / 2, 0); // Top point
-    path.lineTo(size.width, size.height); // Bottom right
-    path.lineTo(0, size.height); // Bottom left
-    path.close(); // Complete the triangle
-    return path;
+  void paint(Canvas canvas, Size size) {
+    final Paint borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth
+      ..strokeJoin = StrokeJoin.round;
+
+    final Paint fillPaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill;
+
+    // 🔺 Equilateral Triangle Size Calculation
+    double baseWidth = size.width * 1;
+    double height = (sqrt(3) / 2) * baseWidth;
+
+    // Define triangle points
+    Offset topPoint = Offset(baseWidth / 2, 0);
+    Offset bottomLeft = Offset(0, height);
+    Offset bottomRight = Offset(baseWidth, height);
+
+    Path trianglePath = Path()
+      ..moveTo(topPoint.dx, topPoint.dy + cornerRadius)
+      ..lineTo(bottomRight.dx - cornerRadius, bottomRight.dy - cornerRadius)
+      ..lineTo(bottomLeft.dx + cornerRadius, bottomLeft.dy - cornerRadius)
+      ..close();
+
+    // 🔲 **Draw White Border First**
+    canvas.drawPath(trianglePath, borderPaint);
+
+    // 🔺 **Draw Filled Triangle Slightly Smaller**
+    Path fillTrianglePath = Path()
+      ..moveTo(topPoint.dx, topPoint.dy + borderWidth) // Shift down for padding
+      ..lineTo(bottomRight.dx - borderWidth, bottomRight.dy - borderWidth)
+      ..lineTo(bottomLeft.dx + borderWidth, bottomLeft.dy - borderWidth)
+      ..close();
+
+    canvas.drawPath(fillTrianglePath, fillPaint);
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

@@ -1,7 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
 // Packages
-import 'package:levelup/utils.dart';
+import 'package:levelup/userutils.dart';
 import 'dart:convert';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -256,7 +256,7 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
           const SizedBox(height: 20),
           
           RadioListTile<String>(
-            title: const Text("Male"),
+            title: const Text("🚹 Male"),
             value: "Male",
             groupValue: _selectedGender,
             onChanged: (value) {
@@ -266,7 +266,7 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
             },
           ),
           RadioListTile<String>(
-            title: const Text("Female"),
+            title: const Text("🚺 Female"),
             value: "Female",
             groupValue: _selectedGender,
             onChanged: (value) {
@@ -362,7 +362,7 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
                 readOnly: true, // Prevent manual typing
                 onTap: () => _selectDate(context),
                 decoration: InputDecoration(
-                  labelText: 'Select Birth Date',
+                  labelText: '🎈 Select Birth Date',
                   border: OutlineInputBorder(),
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.secondary,
@@ -450,7 +450,7 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
                     "Select Country",
                     style: TextStyle(color: Colors.white),
                   ),
-                  items: ['USA', 'Canada', 'UK', 'Australia']
+                  items: ['🦅 USA', '🍁 Canada', '☕ UK', '🐊 Australia']
                       .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
@@ -645,7 +645,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
           const SizedBox(height: 20),
 
           CheckboxListTile(
-            title: const Text("Fitness"),
+            title: const Text("💪 Fitness"),
             value: _selectedAreas.contains("Fitness"),
             onChanged: (bool? value) {
               setState(() {
@@ -655,7 +655,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
             },
           ),
           CheckboxListTile(
-            title: const Text("Finances"),
+            title: const Text("💸 Finances"),
             value: _selectedAreas.contains("Finances"),
             onChanged: (bool? value) {
               setState(() {
@@ -665,7 +665,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
             },
           ),
           CheckboxListTile(
-            title: const Text("Diet"),
+            title: const Text("🥗 Diet"),
             value: _selectedAreas.contains("Diet"),
             onChanged: (bool? value) {
               setState(() {
@@ -675,7 +675,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
             },
           ),
           CheckboxListTile(
-            title: const Text("Productivity"),
+            title: const Text("📝 Productivity"),
             value: _selectedAreas.contains("Productivity"),
             onChanged: (bool? value) {
               setState(() {
@@ -685,7 +685,7 @@ class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
             },
           ),
           CheckboxListTile(
-            title: const Text("Creativity"),
+            title: const Text("🎨 Creativity"),
             value: _selectedAreas.contains("Creativity"),
             onChanged: (bool? value) {
               setState(() {

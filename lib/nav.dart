@@ -39,9 +39,9 @@ class _NavigationState extends State<Navigation> {
   }
 
   void _onItemTapped(int index) {
-    if (index == _selectedIndex) return; // ✅ Prevent redundant navigation
+    if (index == _selectedIndex) return; // ✅ Prevent redundant taps
 
-    Navigator.of(context).pushReplacement(_createRoute(index));
+    Navigator.of(context).pushReplacement(_createRoute(index)); // ✅ Use sliding animation
   }
 
   PageRouteBuilder _createRoute(int index) {
@@ -62,7 +62,7 @@ class _NavigationState extends State<Navigation> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       ProfileScreen(),
       SocialScreen(),
       HomeScreen(username: _username, shouldReload: false, isEditing: false),
@@ -71,7 +71,7 @@ class _NavigationState extends State<Navigation> {
     ];
 
     return Scaffold(
-      body: _pages[_selectedIndex], // ✅ Ensure the correct tab is displayed
+      body: pages[_selectedIndex], // ✅ Ensure the correct tab is displayed
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,

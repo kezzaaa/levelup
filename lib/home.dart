@@ -8,16 +8,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
 // Files
-import 'utils.dart';
+import 'userutils.dart';
 import 'avatarcreator.dart';
+import 'missions.dart';
 
 // ignore: must_be_immutable
 class HomeScreen extends StatefulWidget {
   String username;
   final bool shouldReload;
   final bool isEditing;
+  final Function(int)? onXPUpdate;
 
-  HomeScreen({super.key, required this.username, required this.shouldReload, required this.isEditing});
+  HomeScreen({super.key, required this.username, required this.shouldReload, required this.isEditing, this.onXPUpdate});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -31,12 +33,16 @@ class _HomeScreenState extends State<HomeScreen> {
   int elapsedSeconds = 0;
   Timer? sessionTimer;
 
+  int _level = 1;
+  int _xp = 0;
+
   @override
   void initState() {
     super.initState();
     _loadAvatar();
     _loadUsername();
     _loadGamingSession();
+    _loadXPData();
 
     // ✅ Automatically reload WebView when returning from Avatar Editor
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -45,6 +51,17 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint("🔄 Auto-reloading WebView...");
       }
     });
+  }
+
+  void openMissionsScreen() async {
+    final int? xpReward = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MissionsScreen()),
+    );
+
+    if (xpReward != null) {
+      _updateXP(xpReward);
+    }
   }
 
   Future<void> _loadUsername() async {
@@ -59,6 +76,71 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       debugPrint("❌ No username found in SharedPreferences");
     }
+  }
+
+  Future<void> _loadXPData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _xp = prefs.getInt('userXP') ?? 0;
+      _level = prefs.getInt('userLevel') ?? 1;
+    });
+  }
+
+  Future<void> _updateXP(int gainedXP) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    setState(() {
+      _xp += gainedXP; // Add the XP gained
+    });
+
+    int xpThreshold = getXpThresholdForLevel(_level);
+
+    // 🚀 Level-up logic
+    while (_xp >= xpThreshold) {
+      _xp -= xpThreshold; // Deduct XP needed for leveling up
+      _level++; // Increase level
+      xpThreshold = getXpThresholdForLevel(_level); // Update threshold for next level
+
+      // 🎉 Animate level-up effect (optional)
+      _showLevelUpAnimation();
+    }
+
+    // Save XP and Level persistently
+    await prefs.setInt('userXP', _xp);
+    await prefs.setInt('userLevel', _level);
+
+    debugPrint("✅ XP Updated: $_xp | Level: $_level");
+  }
+
+  // ✨ Optional: Show a pop-up animation when leveling up
+  void _showLevelUpAnimation() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.black87,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          title: const Center(
+            child: Text(
+              "🎉 Level Up! 🎉",
+              style: TextStyle(color: Colors.yellow, fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+          ),
+          content: Center(
+            child: Text(
+              "You are now Level $_level!",
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Awesome!", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // ✅ Load avatar data from SharedPreferences and update the UI
@@ -208,13 +290,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        "1",
+                        '$_level',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 20,
                         ),
                       ),
                     ),
@@ -225,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: Stack(
                       children: [
-                        // White Border (Background)
+                        // Background XP Bar
                         Container(
                           height: 15,
                           decoration: BoxDecoration(
@@ -237,8 +319,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         // XP Progress (Cyan Fill)
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            double progress = 0.5;
-                            return Container(
+                            double progress = _xp / getXpThresholdForLevel(_level);
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 500),
                               width: constraints.maxWidth * progress,
                               height: 15,
                               decoration: BoxDecoration(
@@ -256,6 +339,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+
+          const SizedBox(height: 10),
 
           // ❤️ Hearts Row (Health Indicator)
           Row(
@@ -384,6 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+
           // 🔹 Row 3: Bottom Section (Start Gaming Session Button)
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.16,
@@ -403,10 +489,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      isGaming ? formatTime(elapsedSeconds) : "Start Gaming Session",
+                      isGaming ? formatTime(elapsedSeconds) : "Start Gaming Session 🎮",
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -415,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        ]
+        ],
       ),
     );
   }
