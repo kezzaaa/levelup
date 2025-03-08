@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 // Files
 import 'package:levelup/nav.dart';
 import 'avatarcreator.dart';
-
+import 'focusareas.dart';
 
 class IntroductionFlow extends StatefulWidget {
   const IntroductionFlow({super.key});
@@ -48,7 +48,7 @@ class _IntroductionFlowState extends State<IntroductionFlow> {
                 const QuestionnaireScreen2(),
                 const QuestionnaireScreen3(),
                 const QuestionnaireScreen4(),
-                const QuestionnaireScreen5(),
+                const FocusAreaScreen(),
                 const PreAvatarScreen(),
                 AvatarCreatorScreen(prefs: prefs), // Pass prefs directly to the screen
                 const UsernamePasswordScreen(),
@@ -508,7 +508,7 @@ class _QuestionnaireScreen4State extends State<QuestionnaireScreen4> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          _createSlideTransition(const QuestionnaireScreen5()),
+          _createSlideTransition(const FocusAreaScreen()),
         );
       }
     }
@@ -587,125 +587,6 @@ class _QuestionnaireScreen4State extends State<QuestionnaireScreen4> {
             onPressed: _selectedGamingSeverity != null ? _saveGamingSeverityAndProceed : null,
             child: const Text("Continue"),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class QuestionnaireScreen5 extends StatefulWidget {
-  const QuestionnaireScreen5({super.key});
-
-  @override
-  _QuestionnaireScreen5State createState() => _QuestionnaireScreen5State();
-}
-
-class _QuestionnaireScreen5State extends State<QuestionnaireScreen5> {
-
-  // Function to save the selected focus and proceed to the next screen
-  Future<void> _saveAreaAndProceed() async {
-    if (_selectedAreas.isNotEmpty) {  // Check list, not _selectedArea
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList('userFocus', _selectedAreas);
-
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => PreAvatarScreen()),
-        );
-      }
-    }
-  }
-
-  List<String> _selectedAreas = [];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
-          onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            _createSlideTransitionBack(const QuestionnaireScreen4()),
-          );
-        },
-      ),
-      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
-      elevation: 0, // Optional: remove shadow
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "What would you like to focus on first?",
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 20),
-
-          CheckboxListTile(
-            title: const Text("💪 Fitness"),
-            value: _selectedAreas.contains("Fitness"),
-            onChanged: (bool? value) {
-              setState(() {
-                _selectedAreas = List.from(_selectedAreas);
-                value == true ? _selectedAreas.add("Fitness") : _selectedAreas.remove("Fitness");
-              });
-            },
-          ),
-          CheckboxListTile(
-            title: const Text("💸 Finances"),
-            value: _selectedAreas.contains("Finances"),
-            onChanged: (bool? value) {
-              setState(() {
-                _selectedAreas = List.from(_selectedAreas);
-                value == true ? _selectedAreas.add("Finances") : _selectedAreas.remove("Finances");
-              });
-            },
-          ),
-          CheckboxListTile(
-            title: const Text("🥗 Diet"),
-            value: _selectedAreas.contains("Diet"),
-            onChanged: (bool? value) {
-              setState(() {
-                _selectedAreas = List.from(_selectedAreas);
-                value == true ? _selectedAreas.add("Diet") : _selectedAreas.remove("Diet");
-              });
-            },
-          ),
-          CheckboxListTile(
-            title: const Text("📝 Productivity"),
-            value: _selectedAreas.contains("Productivity"),
-            onChanged: (bool? value) {
-              setState(() {
-                _selectedAreas = List.from(_selectedAreas);
-                value == true ? _selectedAreas.add("Productivity") : _selectedAreas.remove("Productivity");
-              });
-            },
-          ),
-          CheckboxListTile(
-            title: const Text("🎨 Creativity"),
-            value: _selectedAreas.contains("Creativity"),
-            onChanged: (bool? value) {
-              setState(() {
-                _selectedAreas = List.from(_selectedAreas);
-                value == true ? _selectedAreas.add("Creativity") : _selectedAreas.remove("Creativity");
-              });
-            },
-          ),
-          const SizedBox(height: 20),
-
-          // Continue button
-          ElevatedButton(
-            onPressed: _selectedAreas.isNotEmpty
-                ? () async {
-                    await _saveAreaAndProceed();  // This already handles navigation
-                  }
-                
-                : null, // Disable button if no option is selected
-            child: const Text("Continue"),
-          )
         ],
       ),
     );

@@ -6,7 +6,7 @@ import 'package:levelup/nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Files
-import 'package:levelup/signupprocess.dart';
+import 'signupprocess.dart';
 import 'userutils.dart';
 
 void main() async {
@@ -18,10 +18,16 @@ void main() async {
   // await prefs.clear();
 
   // Clear XP for testing purposes
-  await prefs.setInt('userXP', 0); // Reset XP to 0
-  await prefs.setInt('userLevel', 1); // Reset level to 1
-  await prefs.setStringList('completedMissions', []); // Reset missions
-  
+  await prefs.setInt('userXP', 0);
+  await prefs.setInt('userLevel', 1);
+
+  // Reset refresh tokens
+  await prefs.setInt('refreshTokens', 99);
+
+  // Reset active missions
+  await prefs.remove('completedMissions');
+  await prefs.remove('activeSystemMissions');
+
   // Create and print user on start
   String? userId = await createGuestUser();
   debugPrint("🆔 Loaded guest user ID: $userId");
@@ -46,7 +52,8 @@ class MyApp extends StatelessWidget {
       theme: ThemeData().copyWith(
         colorScheme: ColorScheme.dark(
           primary: const Color(0xFF212121),
-          secondary: Color(0xFF1C1C1C),
+          secondary: const Color(0xFF1C1C1C),
+          tertiary: Colors.grey[700],
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
@@ -76,7 +83,7 @@ class MyApp extends StatelessWidget {
           }),
           checkColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return Colors.white; // White checkmark when selected
+              return const Color(0xFF212121); // White checkmark when selected
             }
             return null; // No check color when unselected
           }),
@@ -162,8 +169,8 @@ class _InitialiseState extends State<Initialise> with SingleTickerProviderStateM
             },
             child: Image.asset(
               'assets/images/logo.png', // Logo
-              width: 150,
-              height: 150,
+              width: 200,
+              height: 200,
             ),
           ),
         ),

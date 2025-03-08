@@ -17,7 +17,6 @@ class ProfileScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 20),
-          
           // Red Log Out Button
           ElevatedButton(
             onPressed: () {
@@ -33,6 +32,25 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: const Text(
               "Log Out",
+              style: TextStyle(color: Colors.white), // White text
+            ),
+          ),
+          const SizedBox(height: 20),
+          // User Preferences Questionnaire
+          ElevatedButton(
+            onPressed: () {
+              // Implement logout logic here (e.g., clear saved user data)
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()), // Navigate to LoginScreen
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green, // Red background color
+              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 12), // Adjust padding if needed
+            ),
+            child: const Text(
+              "Update my lifestyle!",
               style: TextStyle(color: Colors.white), // White text
             ),
           ),

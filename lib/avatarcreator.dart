@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 // Files
 import 'signupprocess.dart';
+import 'focusareas.dart';
 
 class PreAvatarScreen extends StatefulWidget {
   const PreAvatarScreen({super.key});
@@ -228,7 +229,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
               // ✅ If signing up, go back to questionnaire
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const QuestionnaireScreen5()),
+                MaterialPageRoute(builder: (context) => const FocusAreaScreen()),
               );
             }
           },
