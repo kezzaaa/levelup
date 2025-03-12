@@ -9,9 +9,10 @@ import 'signupprocess.dart';
 import 'progress.dart';
 import 'avatarcreator.dart';
 
+
+
 class FocusAreaScreen extends StatefulWidget {
   final bool isEditing; // Determines if it's for editing or setup
-
   const FocusAreaScreen({super.key, this.isEditing = false});
 
   @override
@@ -20,23 +21,24 @@ class FocusAreaScreen extends StatefulWidget {
 
 class _FocusAreaScreenState extends State<FocusAreaScreen> {
   List<String> _selectedAreas = [];
-    final List<String> _availableAreas = [
-    "[💪]  Fitness",
-    "[💸]  Finances",
-    "[🥗]  Diet",
-    "[✏️]  Productivity",
-    "[🎨]  Creativity",
-    "[🧘]  Mindfulness",
-    "[📚]  Education",
-    "[🌙]  Sleep",
-    "[🎯]  Hobbies",
-    "[🧑‍🤝‍🧑]  Social",
-    "[👔]  Career",
-    "[🥇]  Confidence",
-    "[🫂]  Relationships",
-    "[💌]  Dating",
-    "[📱]  Screentime",
-    "[🤹]  Skills",
+  String _searchQuery = "";
+  final List<String> _availableAreas = [
+    "💪  Fitness",
+    "💸  Finances",
+    "🥗  Diet",
+    "✏️  Productivity",
+    "🎨  Creativity",
+    "🧘  Mindfulness",
+    "📚  Education",
+    "🌙  Sleep",
+    "🎯  Hobbies",
+    "🧑‍🤝‍🧑  Social",
+    "👔  Career",
+    "🥇  Confidence",
+    "🫂  Relationships",
+    "💌  Dating",
+    "📱  Screentime",
+    "🤹  Skills",
   ];
 
   @override
@@ -84,7 +86,7 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
             } else {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const QuestionnaireScreen4()),
+                MaterialPageRoute(builder: (context) => const AddictionQuestionScreen()),
               );
             }
           },
@@ -101,9 +103,28 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
             ),
             const SizedBox(height: 20),
 
+            // Add a search bar:
+            TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: "Search Areas",
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
             Expanded(
               child: ListView(
-                children: _availableAreas.map((area) {
+                children: _availableAreas
+                    .where((area) => area.toLowerCase().contains(_searchQuery.toLowerCase()))
+                    .map((area) {
                   return CheckboxListTile(
                     title: Text(area),
                     value: _selectedAreas.contains(area),
@@ -120,11 +141,11 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
 
             // ✅ Save button
             Padding(
-              padding: const EdgeInsets.only(bottom: 50.0), // Adds space below button
+              padding: const EdgeInsets.only(bottom: 50.0),
               child: ElevatedButton(
                 onPressed: _selectedAreas.isNotEmpty
                     ? () async {
-                        await _saveFocusAreas();  // This already handles navigation
+                        await _saveFocusAreas(); // This already handles navigation
                       }
                     : null, // Disable button if no option is selected
                 child: Text(widget.isEditing ? "Save & Update" : "Continue"),

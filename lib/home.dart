@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
 // Packages
 import 'dart:async';
@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart';
 
 // Files
 import 'userutils.dart';
@@ -30,8 +31,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String srcGlb = '';
 
   bool isGaming = false;
+  bool isPaused = false;
   int elapsedSeconds = 0;
   Timer? sessionTimer;
+  String? _gamingTimeLimit;
+
+  int heartsRemaining = 0;
+  bool _hasLostHeartForCurrentSession = false;
 
   int _level = 1;
   int _xp = 0;
@@ -39,10 +45,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    _checkFirstTimeUser();
+    _hasLevelledUp();
+
     _loadAvatar();
     _loadUsername();
     _loadGamingSession();
     _loadXPData();
+    _loadHearts();
 
     // ✅ Automatically reload WebView when returning from Avatar Editor
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -51,6 +62,34 @@ class _HomeScreenState extends State<HomeScreen> {
         debugPrint("🔄 Auto-reloading WebView...");
       }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _saveCurrentLevel(); // Save level before leaving the screen
+  }
+
+  // ✅ Function to check if user has seen home tutorial before
+  Future<void> _checkFirstTimeUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasSeenTutorial = prefs.getBool('hasSeenHomeTutorial') ?? false;
+
+    if (!hasSeenTutorial) {
+      // ✅ Show tutorial pop-up
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showHomeTutorial(context);
+      });
+
+      // ✅ Mark tutorial as seen
+      await prefs.setBool('hasSeenHomeTutorial', true);
+    }
+  }
+
+  Future<void> _saveCurrentLevel() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('previousUserLevel', _level); // Save old level before leaving
+    debugPrint("💾 Saved Previous Level: $_level");
   }
 
   void openMissionsScreen() async {
@@ -83,55 +122,112 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _xp = prefs.getInt('userXP') ?? 0;
       _level = prefs.getInt('userLevel') ?? 1;
+
     });
   }
+
+  Future<void> _loadHearts() async {
+    final prefs = await SharedPreferences.getInstance();
+    int storedHearts = prefs.getInt('heartsRemaining') ?? 5;
+    if (storedHearts == 0) {
+      storedHearts = 5;
+      await prefs.setInt('heartsRemaining', storedHearts);
+    }
+    setState(() {
+      heartsRemaining = storedHearts;
+    });
+  }    
 
   Future<void> _updateXP(int gainedXP) async {
     final prefs = await SharedPreferences.getInstance();
     
+    int oldLevel = _level; // Store previous level before XP update
+
     setState(() {
-      _xp += gainedXP; // Add the XP gained
+      _xp += gainedXP;
     });
 
     int xpThreshold = getXpThresholdForLevel(_level);
 
     // 🚀 Level-up logic
     while (_xp >= xpThreshold) {
-      _xp -= xpThreshold; // Deduct XP needed for leveling up
-      _level++; // Increase level
-      xpThreshold = getXpThresholdForLevel(_level); // Update threshold for next level
+      _xp -= xpThreshold;
+      _level++;
+      xpThreshold = getXpThresholdForLevel(_level);
 
-      // 🎉 Animate level-up effect (optional)
-      _showLevelUpAnimation();
+      heartsRemaining = 5;
+      await prefs.setInt('heartsRemaining', heartsRemaining);
+
+      debugPrint("🎉 Level Up Triggered! New Level = $_level, Remaining XP = $_xp");
     }
 
-    // Save XP and Level persistently
     await prefs.setInt('userXP', _xp);
     await prefs.setInt('userLevel', _level);
 
-    debugPrint("✅ XP Updated: $_xp | Level: $_level");
+    debugPrint("✅ XP Updated: Level = $_level, XP = $_xp");
+
+    // 🔍 Confirm if we should trigger the animation
+    if (_level > oldLevel) {
+      debugPrint("⚡ _showLevelUpAnimation() SHOULD BE CALLED NOW!");
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        debugPrint("✅ _showLevelUpAnimation() IS BEING CALLED!");
+        _showLevelUpDialog(context);
+      });
+    } else {
+      debugPrint("⛔ Level did not increase, no dialog will be shown.");
+    }
   }
 
-  // ✨ Optional: Show a pop-up animation when leveling up
-  void _showLevelUpAnimation() {
+  Future<void> _hasLevelledUp() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    int oldLevel = prefs.getInt('previousUserLevel') ?? 1; // Get last saved level
+    await _loadXPData(); // Ensure `_level` is updated to the latest level
+    int newLevel = _level; // Get the current level after returning
+
+    if (oldLevel != newLevel && newLevel > 1) { // Exclude level 1 from triggering
+      debugPrint("🎉 Level Up detected! Showing dialog in 500ms...");
+
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showLevelUpDialog(context);
+      });
+
+      // Save new level as the previous level to avoid duplicate pop-ups
+      await prefs.setInt('previousUserLevel', newLevel);
+    } else {
+      debugPrint("✅ No Level Up detected or Level is 1 (ignored).");
+    }
+  }
+
+  // ✨ Show a pop-up animation when leveling up
+  void _showLevelUpDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.black87,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          title: const Center(
-            child: Text(
-              "🎉 Level Up! 🎉",
-              style: TextStyle(color: Colors.yellow, fontSize: 22, fontWeight: FontWeight.bold),
-            ),
+          title: const Text(
+            "🎉 Level Up! 🎉",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.cyan, fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          content: Center(
-            child: Text(
-              "You are now Level $_level!",
-              style: const TextStyle(color: Colors.white, fontSize: 18),
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "You are now Level $_level!",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(height: 30), // Spacing for readability
+              Text(
+                "❤️ Your hearts have been fully restored! ❤️",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
+          actionsAlignment: MainAxisAlignment.center,
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -172,7 +268,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void openAvatarEditor() async {
     final prefs = await SharedPreferences.getInstance();
     Navigator.push(
-      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => AvatarCreatorScreen(prefs: prefs, isEditing: true),
@@ -199,64 +294,352 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadGamingSession() async {
     final prefs = await SharedPreferences.getInstance();
-    final int? savedStartTime = prefs.getInt('gamingStartTime');
-
-    if (savedStartTime != null) {
-      int secondsElapsed = DateTime.now()
-          .difference(DateTime.fromMillisecondsSinceEpoch(savedStartTime))
-          .inSeconds;
-
+    bool sessionActive = prefs.getBool('gamingSessionActive') ?? false;
+    
+    // Only restore the session if it is still active.
+    if (sessionActive) {
+      bool gamingIsPaused = prefs.getBool('gamingIsPaused') ?? false;
+      if (gamingIsPaused) {
+        int storedElapsed = prefs.getInt('gamingElapsedSeconds') ?? 0;
+        setState(() {
+          isGaming = true;
+          isPaused = true;
+          elapsedSeconds = storedElapsed;
+        });
+        // Do NOT call _startTimer() when paused!
+      } else {
+        int savedStartTime = prefs.getInt('gamingStartTime') ?? 0;
+        int secondsElapsed = DateTime.now()
+            .difference(DateTime.fromMillisecondsSinceEpoch(savedStartTime))
+            .inSeconds;
+        setState(() {
+          isGaming = true;
+          isPaused = false;
+          elapsedSeconds = secondsElapsed;
+        });
+        _startTimer();
+      }
+    } else {
+      // No active session: reset state.
       setState(() {
-        isGaming = true;
-        elapsedSeconds = secondsElapsed; // ✅ Restore elapsed time
+        isGaming = false;
+        isPaused = false;
+        elapsedSeconds = 0;
       });
-
-      _startTimer(); // ✅ Restart the timer when reloading the screen
     }
   }
 
-  // ✅ Start/Stop the Gaming Session
-  void toggleGamingSession() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _showTimeLimitDialog() async {
+    int selectedHour = 0;
+    int selectedMinute = 0;
 
-    if (!isGaming) {
-      // 🟢 Start gaming session & save start time
-      final int currentTime = DateTime.now().millisecondsSinceEpoch;
-      await prefs.setInt('gamingStartTime', currentTime);
-      setState(() {
-        isGaming = true;
-        elapsedSeconds = 0;
-      });
-      _startTimer();
-    } else {
-      // 🔴 Stop gaming session & remove start time
-      await prefs.remove('gamingStartTime');
-      sessionTimer?.cancel();
-      setState(() {
-        isGaming = false;
-        elapsedSeconds = 0;
-      });
-    }
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            "Set Time Limit ⏳",
+            style: TextStyle(color: Colors.white),
+          ),
+          content: SizedBox(
+            height: 150,
+            child: Row(
+              children: [
+                // Hours picker.
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32.0,
+                    onSelectedItemChanged: (index) {
+                      selectedHour = index;
+                    },
+                    children: List.generate(
+                      24,
+                      (index) => Center(
+                        child: Text(
+                          "$index h",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Minutes picker in 15-minute increments.
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32.0,
+                    onSelectedItemChanged: (index) {
+                      selectedMinute = index * 15;
+                    },
+                    children: List.generate(
+                      4,
+                      (index) => Center(
+                        child: Text(
+                          "${index * 15} m",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                debugPrint("Time limit set to: $selectedHour h, $selectedMinute m");
+                setState(() {
+                  _gamingTimeLimit = "$selectedHour h $selectedMinute m";
+                });
+                Navigator.pop(context);
+              },
+              child: const Text(
+                "Set",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // ✅ Start the Timer (Runs in Background)
   void _startTimer() {
     sessionTimer?.cancel();
-    sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (mounted) {
-        setState(() => elapsedSeconds++);
+        setState(() {
+          elapsedSeconds++;
+        });
+
+        // Check if a time limit is set.
+        if (_gamingTimeLimit != null && _gamingTimeLimit!.isNotEmpty) {
+          int limitMinutes = parseGamingTimeLimit(_gamingTimeLimit!);
+          int limitSeconds = limitMinutes * 60;
+          if (elapsedSeconds >= limitSeconds && !_hasLostHeartForCurrentSession) {
+            final prefs = await SharedPreferences.getInstance(); // <-- Obtain prefs here.
+            // Lose a heart.
+            if (heartsRemaining > 0) {
+              setState(() {
+                heartsRemaining--;
+                _hasLostHeartForCurrentSession = true;
+              });
+              // Save the updated heartsRemaining.
+              await prefs.setInt('heartsRemaining', heartsRemaining);
+            }
+            // Show alert dialog, then stop the session.
+            stopGamingSession();
+            await _showTimeLimitExceededDialog();
+          }
+        }
       }
     });
   }
+
+  Future<void> _showTimeLimitExceededDialog() async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Time Limit Exceeded"),
+          content: const Text(
+            "You went over your allotted gaming time limit and have lost a heart.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ✅ Start/Stop or Pause/Resume the Gaming Session
+  void toggleGamingSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!isGaming) {
+      // 🟢 Start gaming session: set start time and initialize elapsedSeconds to 885 (14:45) for testing.
+      int currentTime = DateTime.now().millisecondsSinceEpoch;
+      await prefs.setInt('gamingStartTime', currentTime);
+      await prefs.setBool('gamingSessionActive', true);
+      await prefs.setBool('gamingIsPaused', false);
+      setState(() {
+        isGaming = true;
+        isPaused = false;
+      });
+      _startTimer();
+    } else {
+      // Toggle pause/resume.
+      if (!isPaused) {
+        // Pause the session.
+        sessionTimer?.cancel();
+        await prefs.setBool('gamingIsPaused', true);
+        await prefs.setInt('gamingElapsedSeconds', elapsedSeconds);
+        setState(() {
+          isPaused = true;
+        });
+      } else {
+        // Resume the session.
+        int storedElapsed = prefs.getInt('gamingElapsedSeconds') ?? elapsedSeconds;
+        int currentTime = DateTime.now().millisecondsSinceEpoch;
+        await prefs.setInt('gamingStartTime', currentTime - storedElapsed * 1000);
+        await prefs.setBool('gamingIsPaused', false);
+        setState(() {
+          isPaused = false;
+        });
+        _startTimer();
+      }
+    }
+  }
+
+  // ✅ Stop the Gaming Session (separate from pause/resume)
+  void stopGamingSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Use elapsedSeconds as the session duration.
+    int durationSeconds = elapsedSeconds;
+    
+    // Format the current date for display.
+    DateTime now = DateTime.now();
+    String dateStr = "${now.day.toString().padLeft(2, '0')}/"
+        "${now.month.toString().padLeft(2, '0')}/"
+        "${now.year}";
+    
+    // Format the duration using your formatTime function.
+    String durationStr = formatTime(durationSeconds);
+    
+    // Create a session record string.
+    String sessionRecord = "$dateStr: $durationStr";
+    
+    // Retrieve the existing gaming sessions list or initialize a new one.
+    List<String> sessions = prefs.getStringList('gamingSessions') ?? [];
+    sessions.add(sessionRecord);
+    await prefs.setStringList('gamingSessions', sessions);
+    
+    // Mark the session as no longer active.
+    await prefs.setBool('gamingSessionActive', false);
+    await prefs.remove('gamingStartTime');
+    
+    sessionTimer?.cancel();
+    setState(() {
+      isGaming = false;
+      isPaused = false;
+      elapsedSeconds = 0;
+      _hasLostHeartForCurrentSession = false;
+    });
+  }
+
+  Future<void> showGamingHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sessions = prefs.getStringList('gamingSessions') ?? [];
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Gaming History 🧾"),
+          content: sessions.isEmpty
+              ? const Text("No past gaming sessions.")
+              : SizedBox(
+                  width: double.maxFinite,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: sessions.length,
+                    itemBuilder: (context, index) {
+                      return Text(sessions[index]);
+                    },
+                  ),
+                ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  int parseGamingTimeLimit(String limit) {
+  int hours = 0;
+  int minutes = 0;
+  RegExp hourExp = RegExp(r"(\d+)\s*h");
+  RegExp minuteExp = RegExp(r"(\d+)\s*m");
+  var hourMatch = hourExp.firstMatch(limit);
+  var minuteMatch = minuteExp.firstMatch(limit);
+  if (hourMatch != null) {
+    hours = int.parse(hourMatch.group(1)!);
+  }
+  if (minuteMatch != null) {
+    minutes = int.parse(minuteMatch.group(1)!);
+  }
+  return hours * 60 + minutes;
+}
 
   // ✅ Format Time to HH:MM:SS
   String formatTime(int seconds) {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
     int secs = seconds % 60;
-    return "${hours.toString().padLeft(2, '0')}:"
-           "${minutes.toString().padLeft(2, '0')}:"
-           "${secs.toString().padLeft(2, '0')}";
+
+    List<String> parts = [];
+
+    if (hours > 0) parts.add("$hours" "h");
+    if (minutes > 0) parts.add("$minutes" "m");
+    if (secs > 0 || parts.isEmpty) parts.add("$secs" "s"); // Always show seconds if no other units
+
+    return parts.join(" ");
+  }
+
+  void _showHomeTutorial(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Welcome to the Home Page",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "• Customise your avatar and make them do funny dances.\n"
+                  "• See your current avatar level.\n"
+                  "• Track your gaming sessions, but be careful, if you go over your set limit, you'll lose a heart!.\n"
+                  "• Hearts can be restored upon level up!\n",
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Got it!"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -265,9 +648,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.secondary,
         title: Text(
-          "Welcome, ${widget.username}!",
+          "Welcome back, ${widget.username}!",
           style: const TextStyle(color: Colors.white),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: () => _showHomeTutorial(context),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -305,34 +694,69 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // 🌟 XP Bar (Cyan progress with white border)
                   Expanded(
-                    child: Stack(
-                      children: [
-                        // Background XP Bar
-                        Container(
-                          height: 15,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-
-                        // XP Progress (Cyan Fill)
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            double progress = _xp / getXpThresholdForLevel(_level);
-                            return AnimatedContainer(
-                              duration: const Duration(milliseconds: 500),
-                              width: constraints.maxWidth * progress,
-                              height: 15,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        double progressValue = _xp / getXpThresholdForLevel(_level);
+                        double filledWidth = constraints.maxWidth * progressValue;
+                        // Format percentage value.
+                        int percent = (progressValue * 100).toInt();
+                        return Stack(
+                          children: [
+                            // Background XP Bar.
+                            Container(
+                              height: 20,
                               decoration: BoxDecoration(
-                                color: Colors.cyan,
+                                color: Colors.grey[700],
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white, width: 2),
                               ),
-                            );
-                          },
-                        ),
-                      ],
+                            ),
+                            // Conditionally render the filled progress bar.
+                            progressValue > 0
+                                ? AnimatedContainer(
+                                    duration: const Duration(milliseconds: 1000),
+                                    width: filledWidth,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: Colors.cyan,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                            // Conditionally position the percentage text.
+                            progressValue > 0
+                                ? Positioned(
+                                    left: 0,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      width: filledWidth,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        "$percent%",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Positioned.fill(
+                                    child: Center(
+                                      child: Text(
+                                        "$percent%",
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -346,7 +770,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
-              3,
+              5,
               (index) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2.5),
                 child: Container(
@@ -354,7 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 30,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.red,
+                    color: index < heartsRemaining ? Colors.red : Colors.grey, // Grey out lost hearts.
                     border: Border.all(color: Colors.white, width: 2),
                   ),
                   child: const Center(
@@ -474,30 +898,78 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.16,
             child: Center(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: toggleGamingSession,
-                  borderRadius: BorderRadius.circular(10),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: 50,
-                    width: 220,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isGaming ? Colors.grey[800] : Colors.green,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      isGaming ? formatTime(elapsedSeconds) : "Start Gaming Session 🎮",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Left Floating Action Button
+                  RawMaterialButton(
+                    onPressed: () {
+                      if (isGaming) {
+                        toggleGamingSession(); // Toggle pause/resume
+                      } else {
+                        showGamingHistory(); // Show gaming history pop-up
+                      }
+                    },
+                    constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    fillColor: Colors.grey[700],
+                    child: Icon(
+                      isGaming ? (isPaused ? Icons.play_arrow : Icons.pause) : Icons.history,
+                      color: Colors.white,
                     ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+
+                  // Central Gaming Session Button (Larger FAB)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _gamingTimeLimit == null || _gamingTimeLimit!.isEmpty
+                            ? "🚫 No gaming time limit set"
+                            : "⏳ Gaming time limit: $_gamingTimeLimit",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      RawMaterialButton(
+                        onPressed: toggleGamingSession,
+                        constraints: const BoxConstraints.tightFor(width: 220, height: 50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        fillColor: isGaming ? Colors.grey[700] : Colors.green,
+                        child: Text(
+                          isGaming ? formatTime(elapsedSeconds) : "Start Gaming Session 🎮",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Right Floating Action Button
+                  RawMaterialButton(
+                    onPressed: () {
+                      if (isGaming) {
+                        stopGamingSession(); // Stop session
+                      } else {
+                        _showTimeLimitDialog(); // Open time limit settings
+                      }
+                    },
+                    constraints: const BoxConstraints.tightFor(width: 50, height: 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    fillColor: Colors.grey[700],
+                    child: Icon(
+                      isGaming ? Icons.stop : Icons.settings,
+                      color: isGaming ? Colors.red : Colors.white,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

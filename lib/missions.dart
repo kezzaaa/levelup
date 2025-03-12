@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
 // Packages
 import 'dart:async';
@@ -10,6 +10,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Files
 import 'userutils.dart';
+
+enum SortOrder { none, asc, desc }
+SortOrder _userSortOrder = SortOrder.none;
 
 // Missions Screen
 class MissionsScreen extends StatefulWidget {
@@ -30,15 +33,17 @@ class _MissionsScreenState extends State<MissionsScreen> {
 
   String _userFilter = '';
   String _systemFilter = '';
-  int _refreshTokens = 99;
+  int _refreshTokens = 3;
 
-  final ScrollController _userScrollController = ScrollController();
+  
 
   late Timer _countdownTimer;
 
   @override
   void initState() {
     super.initState();
+
+    _checkFirstTimeUser();
 
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
         if (!mounted) return;
@@ -66,8 +71,6 @@ class _MissionsScreenState extends State<MissionsScreen> {
 
         setState(() {}); // Update countdown every second
     });
-
-    _checkFirstTimeUser();
 
     // ✅ Load missions first, then create if necessary
     _loadMissions().then((_) async {
@@ -107,7 +110,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
     if (!hasSeenTutorial) {
       // ✅ Show tutorial pop-up
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) _showMissionTutorialTip(context);
+        if (mounted) _showMissionsTutorial(context);
       });
 
       // ✅ Mark tutorial as seen
@@ -124,8 +127,11 @@ class _MissionsScreenState extends State<MissionsScreen> {
 
     // Normalize selected areas to match lowercase skillsector values
     List<String> normalizedSelectedAreas = selectedAreas
-        .map((area) => area.replaceAll(RegExp(r'\[.*?\]'), '').trim().toLowerCase())
-        .toList();
+      .map((area) {
+        final parts = area.split(RegExp(r'\s+'));
+        return parts.length > 1 ? parts.sublist(1).join(' ').trim().toLowerCase() : area.trim().toLowerCase();
+      })
+      .toList();
 
     // Optionally remove old missions of the same type
     if (clearExisting) {
@@ -343,23 +349,15 @@ class _MissionsScreenState extends State<MissionsScreen> {
   }
 
   // ✅ Function to show missions tutorial pop-up
-  void _showMissionTutorialTip(BuildContext context) {
+  void _showMissionsTutorial(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // ✅ Rounded corners
-          ),
           child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF212121), // ✅ Dialog background
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white, width: 1), // ✅ White border
-            ),
-            padding: const EdgeInsets.all(16), // ✅ Adds spacing inside the box
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisSize: MainAxisSize.min, // ✅ Ensures dialog wraps content
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   "How to Use Missions",
@@ -401,14 +399,23 @@ class _MissionsScreenState extends State<MissionsScreen> {
       'diet',
       'mindfulness',
       'productivity',
-      'creativity'
+      'creativity',
+      'education',
+      'sleep',
+      'hobbies',
+      'social',
+      'career',
+      'confidence',
+      'relationships',
+      'dating',
+      'screentime',
+      'skills'
     ];
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF212121),
           title: const Text('Add New Mission', style: TextStyle(color: Colors.white)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -578,22 +585,24 @@ class _MissionsScreenState extends State<MissionsScreen> {
         // ✅ Delay marking as completed so the UI updates properly
         if (_systemMissions[index]['progress'] >= segments) {
             Future.delayed(const Duration(milliseconds: 0), () { // ✅ Short delay to allow UI to update
-                if (mounted) {
-                    setState(() {
-                        _systemMissions[index]['completed'] = true;
-                        _systemMissions[index]['removing'] = true;
-                    });
+              if (mounted) {
+                setState(() {
+                  _systemMissions[index]['completed'] = true;
+                  _systemMissions[index]['removing'] = true;
+                });
 
-                    debugPrint("✅ System Mission Completed: $missionTitle");
+                debugPrint("✅ System Mission Completed: $missionTitle");
 
-                    if (!completedMissions.contains(missionTitle)) {
-                        completedMissions.add(missionTitle);
-                        prefs.setStringList('completedMissions', completedMissions);
-                    }
-
-                    int xpReward = _systemMissions[index]['experience'];
-                    completeMission(xpReward);
+                if (!completedMissions.contains(missionTitle)) {
+                  completedMissions.add(missionTitle);
+                  prefs.setStringList('completedMissions', completedMissions);
                 }
+
+                int xpReward = _systemMissions[index]['experience'];
+                int missionSkillPoints = _systemMissions[index]['skillpoints'] ?? 0;
+                String focusArea = _systemMissions[index]['skillsector'] ?? '';
+                completeMission(xpReward, missionSkillPoints, focusArea);
+              }
             });
 
             // ✅ Ensure full fade-out before removing
@@ -605,6 +614,36 @@ class _MissionsScreenState extends State<MissionsScreen> {
                 }
             });
         }
+    }
+  }
+
+  // ✅ Complete a mission, reward XP, and update skill stat
+  void completeMission(int xpReward, int missionSkillPoints, String focusArea) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Update XP and level as before...
+    int currentXP = prefs.getInt('userXP') ?? 0;
+    int currentLevel = prefs.getInt('userLevel') ?? 1;
+
+    currentXP += xpReward;
+    int xpThreshold = getXpThresholdForLevel(currentLevel);
+
+    while (currentXP >= xpThreshold) {
+      currentXP -= xpThreshold;
+      currentLevel++;
+      xpThreshold = getXpThresholdForLevel(currentLevel);
+    }
+
+    await prefs.setInt('userXP', currentXP);
+    await prefs.setInt('userLevel', currentLevel);
+
+    String normalizedFocusArea = focusArea.trim().toLowerCase();
+    int currentSkillPercent = prefs.getInt('skillPercent_$normalizedFocusArea') ?? 0;
+    currentSkillPercent += missionSkillPoints * 10;
+    await prefs.setInt('skillPercent_$normalizedFocusArea', currentSkillPercent);
+    
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context, xpReward);
     }
   }
 
@@ -658,33 +697,6 @@ class _MissionsScreenState extends State<MissionsScreen> {
   void _deductRefreshToken(int index) async {
     if (_refreshTokens <= 0) return; // Stop if no tokens left
     await _updateRefreshTokens(-1); // Deduct a refresh token
-  }
-
-  // ✅ Complete a mission and reward XP
-  void completeMission(int xpReward) async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    int currentXP = prefs.getInt('userXP') ?? 0;
-    int currentLevel = prefs.getInt('userLevel') ?? 1;
-
-    currentXP += xpReward;
-    int xpThreshold = getXpThresholdForLevel(currentLevel);
-
-    while (currentXP >= xpThreshold) {
-      currentXP -= xpThreshold;
-      currentLevel++;
-      xpThreshold = getXpThresholdForLevel(currentLevel);
-    }
-
-    await prefs.setInt('userXP', currentXP);
-    await prefs.setInt('userLevel', currentLevel);
-
-    // ✅ Notify `home.dart` to update XP bar
-    // ignore: use_build_context_synchronously
-    if (Navigator.canPop(context)) {
-      // ignore: use_build_context_synchronously
-      Navigator.pop(context, xpReward); // Send XP reward back to HomeScreen
-    }
   }
 
   Future<void> _setUserFilter(String filter) async {
@@ -744,14 +756,24 @@ class _MissionsScreenState extends State<MissionsScreen> {
     return 0;
   }
 
-  // Format milliseconds to HH:MM:SS
+  // Format to Xm Xh Xs
   String _formatCountdown(int millis) {
-    if (millis <= 0) return "00:00:00";
+    if (millis <= 0) return "0s"; // Ensures it never shows negative time
+
     Duration duration = Duration(milliseconds: millis);
-    String hours = duration.inHours.toString().padLeft(2, '0');
-    String minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
-    String seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
-    return "$hours:$minutes:$seconds";
+    int days = duration.inDays;
+    int hours = duration.inHours % 24;
+    int minutes = duration.inMinutes % 60;
+    int seconds = duration.inSeconds % 60;
+
+    List<String> parts = [];
+
+    if (days > 0) parts.add("$days" "d");
+    if (hours > 0) parts.add("$hours" "h");
+    if (minutes > 0) parts.add("$minutes" "m");
+    if (seconds > 0 || parts.isEmpty) parts.add("$seconds" "s"); // Always show seconds if no other units
+
+    return parts.join(" ");
   }
 
   void _showCompletedMissions(BuildContext context) {
@@ -1108,38 +1130,53 @@ class _MissionsScreenState extends State<MissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Compute filtered missions based on the selected filter.
+    final filteredMissions = _userMissions.where((m) => m['type'] == _userFilter).toList();
+
+    // Sort the missions if a sort order is applied.
+    if (_userSortOrder == SortOrder.asc) {
+      filteredMissions.sort((a, b) =>
+          a['title'].toLowerCase().compareTo(b['title'].toLowerCase()));
+    } else if (_userSortOrder == SortOrder.desc) {
+      filteredMissions.sort((a, b) =>
+          b['title'].toLowerCase().compareTo(a['title'].toLowerCase()));
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.secondary,
         leading: IconButton(
-          icon: const Icon(Icons.help_outline), // Question mark icon
-          tooltip: "Mission Tutorial",
-          onPressed: () => _showMissionTutorialTip(context),
+          icon: const Icon(Icons.emoji_events),
+          tooltip: "View Completed Missions",
+          onPressed: () => _showCompletedMissions(context),
         ),
         title: Center(
           child: Text(
-            "🔄 $_refreshTokens", // Display refresh tokens in the center
+            "🔄 $_refreshTokens",
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.emoji_events), // Trophy icon
-            tooltip: "View Completed Missions",
-            onPressed: () => _showCompletedMissions(context),
+            icon: const Icon(Icons.help_center_outlined),
+            tooltip: "Mission Tutorial",
+            onPressed: () => _showMissionsTutorial(context),
           ),
           const SizedBox(width: 16),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
-            const Text('LevelUp Missions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            // System Missions Section
+            const Text(
+              'LevelUp Missions',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distributes elements evenly
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
@@ -1150,91 +1187,118 @@ class _MissionsScreenState extends State<MissionsScreen> {
                     _buildFilterButton('Monthly', 'monthly', false, _setSystemFilter),
                   ],
                 ),
-                const Spacer(), // Pushes the timer to the right
-                _buildMissionTimer(_systemFilter), // Timer aligned to the right
+                const Spacer(),
+                _buildMissionTimer(_systemFilter),
               ],
             ),
-            const SizedBox(height: 20),  
-            Column(
-              children: _systemMissions.where((m) => m['type'] == _systemFilter).isEmpty
-                  ? [
-                      const SizedBox(height: 10),
-                      const Center(
+            const SizedBox(height: 20),
+            _systemMissions.where((m) => m['type'] == _systemFilter).isEmpty
+                ? Column(
+                    children: const [
+                      SizedBox(height: 10),
+                      Center(
                         child: Text(
                           "No missions currently available, come back later.",
-                          style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
-                    ]
-                  : _systemMissions.where((m) => m['type'] == _systemFilter).map((mission) {
-                      return Container(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: _buildMissionTile(mission, _systemMissions.indexOf(mission), false),
-                      );
-                    }).toList(),
-            ),
+                    ],
+                  )
+                : Column(
+                    children: _systemMissions
+                        .where((m) => m['type'] == _systemFilter)
+                        .map((mission) => Container(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: _buildMissionTile(
+                                  mission, _systemMissions.indexOf(mission), false),
+                            ))
+                        .toList(),
+                  ),
             const SizedBox(height: 20),
-            const Text('Your Missions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            // User Missions Section Header with sort button.
+            const Text(
+              'Your Missions',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 10),
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 _buildFilterButton('Daily', 'daily', true, _setUserFilter),
                 const SizedBox(width: 8),
                 _buildFilterButton('Weekly', 'weekly', true, _setUserFilter),
                 const SizedBox(width: 8),
                 _buildFilterButton('Monthly', 'monthly', true, _setUserFilter),
-              ],
-            ),
-            const SizedBox(height: 20),  
-            Expanded(
-              child: Scrollbar(
-                thumbVisibility: true,
-                controller: _userScrollController,
-                child: _userMissions.where((m) => m['type'] == _userFilter).isEmpty
-                    ? ListView(
-                        controller: _userScrollController,
-                        children: const [
-                          SizedBox(height: 10),
-                          Center(
-                            child: Text(
-                              "Out of missions? Make your own!",
-                              style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.grey),
-                            ),
-                          ),
-                        ],
-                      )
-                  : ListView.builder(
-                  controller: _userScrollController,
-                  itemCount:
-                      _userMissions.where((m) => m['type'] == _userFilter).length,
-                  itemBuilder: (context, index) {
-                    final filteredMissions =
-                        _userMissions.where((m) => m['type'] == _userFilter).toList();
-                    if (index >= filteredMissions.length) return const SizedBox();
-
-                    final mission = filteredMissions[index];
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: _buildMissionTile(mission, index, true),
-                    );
+                const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    _userSortOrder == SortOrder.none
+                        ? Icons.sort
+                        : _userSortOrder == SortOrder.asc
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      if (_userSortOrder == SortOrder.none) {
+                        _userSortOrder = SortOrder.asc;
+                      } else if (_userSortOrder == SortOrder.asc) {
+                        _userSortOrder = SortOrder.desc;
+                      } else {
+                        _userSortOrder = SortOrder.none;
+                      }
+                    });
                   },
                 ),
-              ),
+              ],
             ),
+            const SizedBox(height: 20),
+            // User Missions List
+            filteredMissions.isEmpty
+                ? ListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 10),
+                      Center(
+                        child: Text(
+                          "Out of missions? Make your own!",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredMissions.length,
+                    itemBuilder: (context, index) {
+                      final mission = filteredMissions[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: _buildMissionTile(mission, index, true),
+                      );
+                    },
+                  ),
           ],
         ),
       ),
-      // Floating Action Button
       floatingActionButton: FloatingActionButton(
-        onPressed: _addMission, // Calls _addMission() when tapped
-        backgroundColor: Colors.green, // Green background
+        onPressed: _addMission,
+        backgroundColor: Colors.green,
         child: const Icon(
-          Icons.add, // White plus icon
+          Icons.add,
           color: Colors.white,
-          ),
         ),
+      ),
     );
   }
 }

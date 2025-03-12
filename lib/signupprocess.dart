@@ -44,10 +44,10 @@ class _IntroductionFlowState extends State<IntroductionFlow> {
                 const WelcomeScreen(),
                 const QuestionScreen(),
                 const PreQuestionnaireScreen(),
-                const QuestionnaireScreen1(),
-                const QuestionnaireScreen2(),
-                const QuestionnaireScreen3(),
-                const QuestionnaireScreen4(),
+                const GenderQuestionScreen(),
+                const AgeQuestionScreen(),
+                const LocationQuestionScreen(),
+                const AddictionQuestionScreen(),
                 const FocusAreaScreen(),
                 const PreAvatarScreen(),
                 AvatarCreatorScreen(prefs: prefs), // Pass prefs directly to the screen
@@ -151,7 +151,7 @@ class PreQuestionnaireScreen extends StatelessWidget {
       onTap: () {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const QuestionnaireScreen1()),
+          MaterialPageRoute(builder: (context) => const GenderQuestionScreen()),
         );
       },
       child: Container(
@@ -214,14 +214,14 @@ PageRouteBuilder _createSlideTransitionBack(Widget page) {
   );
 }
 
-class QuestionnaireScreen1 extends StatefulWidget {
-  const QuestionnaireScreen1({super.key});
+class GenderQuestionScreen extends StatefulWidget {
+  const GenderQuestionScreen({super.key});
 
   @override
-  _QuestionnaireScreen1State createState() => _QuestionnaireScreen1State();
+  _GenderQuestionScreenState createState() => _GenderQuestionScreenState();
 }
 
-class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
+class _GenderQuestionScreenState extends State<GenderQuestionScreen> {
   String? _selectedGender;
 
   // Function to save gender and navigate to next questionnaire
@@ -233,7 +233,7 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          _createSlideTransition(const QuestionnaireScreen2()),
+          _createSlideTransition(const AgeQuestionScreen()),
         );
       }
     }
@@ -286,14 +286,14 @@ class _QuestionnaireScreen1State extends State<QuestionnaireScreen1> {
   }
 }
 
-class QuestionnaireScreen2 extends StatefulWidget {
-  const QuestionnaireScreen2({super.key});
+class AgeQuestionScreen extends StatefulWidget {
+  const AgeQuestionScreen({super.key});
 
   @override
-  _QuestionnaireScreen2State createState() => _QuestionnaireScreen2State();
+  _AgeQuestionScreenState createState() => _AgeQuestionScreenState();
 }
 
-class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
+class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
   final TextEditingController _dateController = TextEditingController();
 
   // Function to save the selected date and proceed to next screen (Login)
@@ -305,7 +305,7 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          _createSlideTransition(const QuestionnaireScreen3()),
+          _createSlideTransition(const LocationQuestionScreen()),
         );
       }
     }
@@ -337,7 +337,7 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
             onPressed: () {
             Navigator.pushReplacement(
               context,
-              _createSlideTransitionBack(const QuestionnaireScreen1()),
+              _createSlideTransitionBack(const GenderQuestionScreen()),
             );
           },
         ),
@@ -384,14 +384,14 @@ class _QuestionnaireScreen2State extends State<QuestionnaireScreen2> {
   }
 }
 
-class QuestionnaireScreen3 extends StatefulWidget {
-  const QuestionnaireScreen3({super.key});
+class LocationQuestionScreen extends StatefulWidget {
+  const LocationQuestionScreen({super.key});
 
   @override
-  _QuestionnaireScreen3State createState() => _QuestionnaireScreen3State();
+  _LocationQuestionScreenState createState() => _LocationQuestionScreenState();
 }
 
-class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
+class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
   String? _selectedCountry;
 
   // Function to save the selected country and proceed
@@ -403,7 +403,7 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          _createSlideTransition(const QuestionnaireScreen4()),
+          _createSlideTransition(const AddictionQuestionScreen()),
         );
       }
     }
@@ -418,7 +418,7 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
           onPressed: () {
           Navigator.pushReplacement(
             context,
-            _createSlideTransitionBack(const QuestionnaireScreen2()),
+            _createSlideTransitionBack(const AgeQuestionScreen()),
           );
         },
       ),
@@ -489,14 +489,14 @@ class _QuestionnaireScreen3State extends State<QuestionnaireScreen3> {
   }
 }
 
-class QuestionnaireScreen4 extends StatefulWidget {
-  const QuestionnaireScreen4({super.key});
+class AddictionQuestionScreen extends StatefulWidget {
+  const AddictionQuestionScreen({super.key});
 
   @override
-  _QuestionnaireScreen4State createState() => _QuestionnaireScreen4State();
+  _AddictionQuestionScreenState createState() => _AddictionQuestionScreenState();
 }
 
-class _QuestionnaireScreen4State extends State<QuestionnaireScreen4> {
+class _AddictionQuestionScreenState extends State<AddictionQuestionScreen> {
   String? _selectedGamingSeverity;
 
   // Function to save the selected gaming severity and proceed
@@ -523,7 +523,7 @@ class _QuestionnaireScreen4State extends State<QuestionnaireScreen4> {
           onPressed: () {
           Navigator.pushReplacement(
             context,
-            _createSlideTransitionBack(const QuestionnaireScreen3()),
+            _createSlideTransitionBack(const LocationQuestionScreen()),
           );
         },
       ),

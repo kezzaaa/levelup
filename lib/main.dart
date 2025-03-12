@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Files
 import 'signupprocess.dart';
 import 'userutils.dart';
+import 'progress.dart';
 
 void main() async {
   // Ensure Flutter is initialized before fetching SharedPreferences
@@ -22,18 +23,27 @@ void main() async {
   await prefs.setInt('userLevel', 1);
 
   // Reset refresh tokens
-  await prefs.setInt('refreshTokens', 99);
+  await prefs.setInt('refreshTokens', 3);
 
   // Reset active missions
   await prefs.remove('completedMissions');
   await prefs.remove('activeSystemMissions');
+
+  // Remove focus areas
+  // await prefs.remove('userFocuses');
+
+  // Reset skill bars for testing
+  await resetAllSkillBars();
+
+  // Clear stored gaming sessions
+  await prefs.remove('gamingSessions');
 
   // Create and print user on start
   String? userId = await createGuestUser();
   debugPrint("🆔 Loaded guest user ID: $userId");
 
   // Toggle if the user has seen the introduction before
-  final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? true;
+  final bool hasSeenIntro = prefs.getBool('hasSeenIntro') ?? false;
 
   // Run the app and pass whether the user has seen the intro or not
   runApp(MyApp(hasSeenIntro: hasSeenIntro));
@@ -54,6 +64,12 @@ class MyApp extends StatelessWidget {
           primary: const Color(0xFF212121),
           secondary: const Color(0xFF1C1C1C),
           tertiary: Colors.grey[700],
+        ),
+        dialogTheme: DialogTheme(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), // Set your desired border radius
+            side: const BorderSide(color: Colors.white, width: 1.5), // Set a border color and width
+          ),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(

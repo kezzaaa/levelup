@@ -144,18 +144,10 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // ✅ Rounded corners
-          ),
           child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF212121), // ✅ Dialog background
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white, width: 1), // ✅ White border added here
-            ),
-            padding: const EdgeInsets.all(16), // ✅ Adds space inside the box
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisSize: MainAxisSize.min, // ✅ Makes dialog wrap content
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
                   "How to Use the Avatar Creator",
