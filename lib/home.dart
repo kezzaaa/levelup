@@ -15,12 +15,12 @@ import 'missions.dart';
 
 // ignore: must_be_immutable
 class HomeScreen extends StatefulWidget {
-  String username;
+  String name;
   final bool shouldReload;
   final bool isEditing;
   final Function(int)? onXPUpdate;
 
-  HomeScreen({super.key, required this.username, required this.shouldReload, required this.isEditing, this.onXPUpdate});
+  HomeScreen({super.key, required this.name, required this.shouldReload, required this.isEditing, this.onXPUpdate});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _hasLevelledUp();
 
     _loadAvatar();
-    _loadUsername();
+    _loadName();
     _loadGamingSession();
     _loadXPData();
     _loadHearts();
@@ -103,17 +103,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadName() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? storedUsername = prefs.getString('username');
+    final String? storedName = prefs.getString('firstName');
 
-    if (storedUsername != null && storedUsername.isNotEmpty) {
+    if (storedName != null && storedName.isNotEmpty) {
       setState(() {
-        widget.username = storedUsername; // ✅ Update UI with correct username
+        widget.name = storedName;
       });
-      debugPrint('✅ Username Loaded: $storedUsername');
+      debugPrint("✅ First Name Loaded in Home: $storedName");
     } else {
-      debugPrint("❌ No username found in SharedPreferences");
+      debugPrint("❌ No first name found in SharedPreferences");
     }
   }
 
@@ -646,14 +646,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         title: Text(
-          "Welcome back, ${widget.username}!",
+          "Welcome back, ${widget.name}!",
           style: const TextStyle(color: Colors.white),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.help_outline, color: Colors.white),
+            icon: const Icon(Icons.help_center_outlined, color: Colors.white),
             onPressed: () => _showHomeTutorial(context),
           ),
         ],

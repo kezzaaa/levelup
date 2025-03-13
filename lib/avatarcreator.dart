@@ -226,7 +226,6 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
             }
           },
         ),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         elevation: 0,
       ),
       body: Stack(

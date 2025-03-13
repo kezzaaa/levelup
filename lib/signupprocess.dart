@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 
 // Packages
 import 'package:flutter/material.dart';
@@ -44,6 +44,7 @@ class _IntroductionFlowState extends State<IntroductionFlow> {
                 const WelcomeScreen(),
                 const QuestionScreen(),
                 const PreQuestionnaireScreen(),
+                const NameQuestionScreen(),
                 const GenderQuestionScreen(),
                 const AgeQuestionScreen(),
                 const LocationQuestionScreen(),
@@ -151,7 +152,7 @@ class PreQuestionnaireScreen extends StatelessWidget {
       onTap: () {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const GenderQuestionScreen()),
+          MaterialPageRoute(builder: (context) => const NameQuestionScreen()),
         );
       },
       child: Container(
@@ -214,6 +215,101 @@ PageRouteBuilder _createSlideTransitionBack(Widget page) {
   );
 }
 
+class NameQuestionScreen extends StatefulWidget {
+  const NameQuestionScreen({super.key});
+
+  @override
+  _NameQuestionScreenState createState() => _NameQuestionScreenState();
+}
+
+class _NameQuestionScreenState extends State<NameQuestionScreen> {
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  bool _isButtonEnabled = false;
+
+  // Function to save names and navigate to the next questionnaire
+  void _saveFullNameAndProceed() async {
+    String firstName = _firstNameController.text.trim();
+    String lastName = _lastNameController.text.trim();
+    String fullName = "$firstName $lastName"; // ✅ Combine first & last name
+
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('firstName', firstName);
+      await prefs.setString('lastName', lastName);
+      await prefs.setString('fullName', fullName);
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          _createSlideTransition(const GenderQuestionScreen()),
+        );
+      }
+    }
+  }
+
+  // Validate if both fields are filled
+  void _validateInputs() {
+    setState(() {
+      _isButtonEnabled = _firstNameController.text.trim().isNotEmpty &&
+                         _lastNameController.text.trim().isNotEmpty;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "What is your name?",
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 20),
+
+            // First Name Input Field
+            TextField(
+              controller: _firstNameController,
+              decoration: InputDecoration(
+                labelText: "First Name",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onChanged: (_) => _validateInputs(),
+            ),
+            const SizedBox(height: 20),
+
+            // Last Name Input Field
+            TextField(
+              controller: _lastNameController,
+              decoration: InputDecoration(
+                labelText: "Last Name",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onChanged: (_) => _validateInputs(),
+            ),
+            const SizedBox(height: 20),
+
+            // Continue Button (Disabled until both fields are filled)
+            ElevatedButton(
+              onPressed: _isButtonEnabled ? _saveFullNameAndProceed : null,
+              child: const Text("Continue"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class GenderQuestionScreen extends StatefulWidget {
   const GenderQuestionScreen({super.key});
 
@@ -228,7 +324,7 @@ class _GenderQuestionScreenState extends State<GenderQuestionScreen> {
   void _saveGenderAndProceed() async {
     if (_selectedGender != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userGender', _selectedGender!);
+      await prefs.setString('gender', _selectedGender!);
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -243,8 +339,15 @@ class _GenderQuestionScreenState extends State<GenderQuestionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              _createSlideTransitionBack(const NameQuestionScreen()),
+            );
+          },
+        ),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -294,13 +397,13 @@ class AgeQuestionScreen extends StatefulWidget {
 }
 
 class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
-  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _selectedDateOfBirth = TextEditingController();
 
   // Function to save the selected date and proceed to next screen (Login)
   void _saveBirthDateAndProceed() async {
-    if (_dateController.text.isNotEmpty) {
+    if (_selectedDateOfBirth.text.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userBirthDate', _dateController.text);
+      await prefs.setString('dob', _selectedDateOfBirth.text);
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -323,7 +426,7 @@ class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
 
     if (picked != initialDate) {
       setState(() {
-        _dateController.text = DateFormat('dd/MM/yyyy').format(picked);
+        _selectedDateOfBirth.text = DateFormat('dd/MM/yyyy').format(picked);
       });
     }
   }
@@ -341,8 +444,6 @@ class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
             );
           },
         ),
-        backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
-        elevation: 0, // Optional: remove shadow
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -358,14 +459,11 @@ class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
             child: SizedBox(
               width: MediaQuery.of(context).size.width * 0.8,
               child: TextFormField(
-                controller: _dateController,
+                controller: _selectedDateOfBirth,
                 readOnly: true, // Prevent manual typing
                 onTap: () => _selectDate(context),
                 decoration: InputDecoration(
                   labelText: '🎈 Select Birth Date',
-                  border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.secondary,
                   suffixIcon: Icon(Icons.calendar_today),
                 ),
               ),
@@ -375,7 +473,7 @@ class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
 
           // Continue button
           ElevatedButton(
-            onPressed: _dateController.text.isNotEmpty ? _saveBirthDateAndProceed : null,
+            onPressed: _selectedDateOfBirth.text.isNotEmpty ? _saveBirthDateAndProceed : null,
             child: const Text("Continue"),
           ),
         ],
@@ -398,7 +496,7 @@ class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
   void _saveCountryAndProceed() async {
     if (_selectedCountry != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userCountry', _selectedCountry!);
+      await prefs.setString('location', _selectedCountry!);
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -413,17 +511,15 @@ class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
-          onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            _createSlideTransitionBack(const AgeQuestionScreen()),
-          );
-        },
-      ),
-      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
-      elevation: 0, // Optional: remove shadow
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+            onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              _createSlideTransitionBack(const AgeQuestionScreen()),
+            );
+          },
+        ),
       ),
       body: Center(
         child: Column(
@@ -503,7 +599,7 @@ class _AddictionQuestionScreenState extends State<AddictionQuestionScreen> {
   void _saveGamingSeverityAndProceed() async {
     if (_selectedGamingSeverity != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userGamingSeverity', _selectedGamingSeverity!);
+      await prefs.setString('gamingSeverity', _selectedGamingSeverity!);
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -518,17 +614,15 @@ class _AddictionQuestionScreenState extends State<AddictionQuestionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
-          onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            _createSlideTransitionBack(const LocationQuestionScreen()),
-          );
-        },
-      ),
-      backgroundColor: Theme.of(context).colorScheme.secondary, // Match theme
-      elevation: 0, // Optional: remove shadow
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+            onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              _createSlideTransitionBack(const LocationQuestionScreen()),
+            );
+          },
+        ),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -634,6 +728,11 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('username', username);
       await prefs.setString('password', password);
+
+      // ✅ Get and store the current date as "joinDate"
+      String formattedDate = "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
+      await prefs.setString('joinDate', formattedDate);
+
       await _completeIntroduction();
     }
   }
@@ -665,8 +764,6 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
             }
           },
         ),
-        backgroundColor: Theme.of(context).colorScheme.secondary,
-        elevation: 0,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -707,7 +804,7 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
               valueListenable: _isButtonEnabled,
               builder: (context, isEnabled, child) {
                 return ElevatedButton(
-                  onPressed: isEnabled ? _createAccount : null, 
+                  onPressed: isEnabled ? _createAccount : null,
                   child: const Text("Create Account"),
                 );
               },

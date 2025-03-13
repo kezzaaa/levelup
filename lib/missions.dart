@@ -1144,7 +1144,6 @@ class _MissionsScreenState extends State<MissionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         leading: IconButton(
           icon: const Icon(Icons.emoji_events),
           tooltip: "View Completed Missions",

@@ -9,8 +9,6 @@ import 'signupprocess.dart';
 import 'progress.dart';
 import 'avatarcreator.dart';
 
-
-
 class FocusAreaScreen extends StatefulWidget {
   final bool isEditing; // Determines if it's for editing or setup
   const FocusAreaScreen({super.key, this.isEditing = false});
@@ -18,6 +16,7 @@ class FocusAreaScreen extends StatefulWidget {
   @override
   _FocusAreaScreenState createState() => _FocusAreaScreenState();
 }
+
 
 class _FocusAreaScreenState extends State<FocusAreaScreen> {
   List<String> _selectedAreas = [];
@@ -47,6 +46,8 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
     _loadUserFocus();
   }
 
+  
+
   Future<void> _loadUserFocus() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -70,11 +71,28 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
     }
   }
 
+  PageRouteBuilder _createSlideTransitionBack(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return page;
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const offsetBegin = Offset(-1.0, 0.0); // Slide from left to right
+        const offsetEnd = Offset.zero;
+        const curve = Curves.easeInOut;
+
+        var tween = Tween(begin: offsetBegin, end: offsetEnd).chain(CurveTween(curve: curve));
+        var offsetAnimation = animation.drive(tween);
+
+        return SlideTransition(position: offsetAnimation, child: child);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.secondary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
@@ -86,7 +104,7 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
             } else {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const AddictionQuestionScreen()),
+                _createSlideTransitionBack(AddictionQuestionScreen()),
               );
             }
           },

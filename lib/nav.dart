@@ -22,34 +22,41 @@ class Navigation extends StatefulWidget {
 
 class _NavigationState extends State<Navigation> {
   late int _selectedIndex;
-  String _username = "User"; // ✅ Ensure default value
+  String _name = "";
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.newIndex; // ✅ Assign selected index from constructor
-    _loadUsername();
+    _selectedIndex = widget.newIndex;
+    _loadName();
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _loadName() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _username = prefs.getString('username') ?? "User"; // ✅ Load stored username
-    });
+    final String? storedName = prefs.getString('firstName');
+
+    if (storedName != null && storedName.isNotEmpty) {
+      setState(() {
+        _name = storedName;
+      });
+      debugPrint("✅ First Name Loaded: $_name");
+    } else {
+      debugPrint("❌ No first name found in SharedPreferences");
+    }
   }
 
   void _onItemTapped(int index) {
-    if (index == _selectedIndex) return; // ✅ Prevent redundant taps
+    if (index == _selectedIndex) return;
 
-    Navigator.of(context).pushReplacement(_createRoute(index)); // ✅ Use sliding animation
+    Navigator.of(context).pushReplacement(_createRoute(index));
   }
 
   PageRouteBuilder _createRoute(int index) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) =>
-          Navigation(newIndex: index), // ✅ Pass index correctly
+          Navigation(newIndex: index),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final begin = Offset(index > _selectedIndex ? 1.0 : -1.0, 0.0); // ✅ Slide Left/Right
+        final begin = Offset(index > _selectedIndex ? 1.0 : -1.0, 0.0);
         final end = Offset.zero;
         final tween =
             Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeInOut));
@@ -65,7 +72,7 @@ class _NavigationState extends State<Navigation> {
     final List<Widget> pages = [
       ProfileScreen(),
       SocialScreen(),
-      HomeScreen(username: _username, shouldReload: false, isEditing: false),
+      HomeScreen(name: _name, shouldReload: false, isEditing: false),
       MissionsScreen(),
       ProgressScreen(),
     ];
@@ -80,7 +87,7 @@ class _NavigationState extends State<Navigation> {
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Account'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Social'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.check_box), label: 'Missions'),

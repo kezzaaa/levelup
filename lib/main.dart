@@ -32,6 +32,9 @@ void main() async {
   // Remove focus areas
   // await prefs.remove('userFocuses');
 
+  // Remove profile picture
+  await prefs.remove('profilePath');
+
   // Reset skill bars for testing
   await resetAllSkillBars();
 
@@ -65,15 +68,35 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFF1C1C1C),
           tertiary: Colors.grey[700],
         ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF1C1C1C),
+        ),
         dialogTheme: DialogTheme(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // Set your desired border radius
-            side: const BorderSide(color: Colors.white, width: 1.5), // Set a border color and width
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Colors.white, width: 1.5),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          filled: true,
+          fillColor: const Color(0xFF1C1C1C), // Adjust if needed
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(1),
+            borderSide: const BorderSide(color: Colors.white, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.white, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.white, width: 1),
           ),
         ),
         radioTheme: RadioThemeData(
@@ -83,7 +106,7 @@ class MyApp extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             // Normal state (default)
             backgroundColor: const Color(0xFF4CAF50),
-            foregroundColor: Colors.black,
+            foregroundColor: Colors.white,
 
             // Disabled state
             disabledBackgroundColor: Color.fromARGB(255, 28, 28, 28),
