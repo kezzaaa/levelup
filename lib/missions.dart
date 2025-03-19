@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Files
 import 'userutils.dart';
+import 'completedmissions.dart';
 
 enum SortOrder { none, asc, desc }
 SortOrder _userSortOrder = SortOrder.none;
@@ -23,9 +24,10 @@ class MissionsScreen extends StatefulWidget {
 }
 
 class _MissionsScreenState extends State<MissionsScreen> {
-  List<Map<String, dynamic>> _allMissions = []; // Store ALL missions
-  final List<Map<String, dynamic>> _systemMissions = []; // Store only active missions
+  List<Map<String, dynamic>> _allMissions = [];
+  final List<Map<String, dynamic>> _systemMissions = [];
   final List<Map<String, dynamic>> _userMissions = [];
+  List<Map<String, dynamic>> missionAchievements = [];
 
   int _dailyResetTime = 0;
   int _weeklyResetTime = 0;
@@ -122,16 +124,17 @@ class _MissionsScreenState extends State<MissionsScreen> {
       {bool clearExisting = true, bool addToList = true, List<String> excludeNames = const []}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Get user-selected focuses from SharedPreferences
+    // Get user-selected focuses and preferences from SharedPreferences
     List<String> selectedAreas = prefs.getStringList('userFocuses') ?? [];
+    List<String> userPreferences = prefs.getStringList('userPreferences') ?? [];
 
     // Normalize selected areas to match lowercase skillsector values
     List<String> normalizedSelectedAreas = selectedAreas
-      .map((area) {
-        final parts = area.split(RegExp(r'\s+'));
-        return parts.length > 1 ? parts.sublist(1).join(' ').trim().toLowerCase() : area.trim().toLowerCase();
-      })
-      .toList();
+        .map((area) {
+          final parts = area.split(RegExp(r'\s+'));
+          return parts.length > 1 ? parts.sublist(1).join(' ').trim().toLowerCase() : area.trim().toLowerCase();
+        })
+        .toList();
 
     // Optionally remove old missions of the same type
     if (clearExisting) {
@@ -141,16 +144,32 @@ class _MissionsScreenState extends State<MissionsScreen> {
     }
 
     // Filter available missions:
-    // - mission must meet the completed/repeatable criteria
-    // - match the mission type and selected areas
-    // - and not be in the excludeNames list (based on their 'title' field)
-    List<Map<String, dynamic>> availableMissions = _allMissions
-        .where((m) =>
-            ((!m['completed']) || (m['completed'] && m['repeatable'] == true)) &&
-            m['type'] == type &&
-            normalizedSelectedAreas.contains(m['skillsector']) &&
-            !excludeNames.contains(m['title']))
-        .toList();
+    List<Map<String, dynamic>> availableMissions = _allMissions.where((m) {
+      bool meetsCriteria = ((!m['completed']) || (m['completed'] && m['repeatable'] == true)) &&
+          m['type'] == type &&
+          normalizedSelectedAreas.contains(m['skillsector']) &&
+          !excludeNames.contains(m['title']);
+
+      // ✅ Check if the mission has a 'tags' property and is not empty
+      if (m.containsKey('tags') && m['tags'] is List && m['tags'].isNotEmpty) {
+        List<String> missionTags = List<String>.from(m['tags']); // Convert to List<String>
+
+        // ✅ Ensure at least one mission tag matches a user preference
+        bool tagMatch = missionTags.any((tag) => userPreferences.contains(tag));
+        if (!tagMatch) return false; // ❌ Exclude mission if no matching tags
+      }
+
+      // ✅ Check if the mission has an 'exclusions' property
+      if (m.containsKey('exclusions') && m['exclusions'] is List && m['exclusions'].isNotEmpty) {
+        List<String> missionExclusions = List<String>.from(m['exclusions']); // Convert to List<String>
+
+        // ❌ If any exclusion matches a user preference, filter the mission out
+        bool hasExclusionConflict = missionExclusions.any((exclusion) => userPreferences.contains(exclusion));
+        if (hasExclusionConflict) return false;
+      }
+
+      return meetsCriteria;
+    }).toList();
 
     availableMissions.shuffle();
 
@@ -278,17 +297,22 @@ class _MissionsScreenState extends State<MissionsScreen> {
   int _getNextResetTime(String type) {
     DateTime now = DateTime.now();
     DateTime nextReset;
-
+    
     if (type == 'daily') {
-      nextReset = now.add(Duration(days: 1));
+      // Set reset to next midnight
+      nextReset = DateTime(now.year, now.month, now.day + 1);
     } else if (type == 'weekly') {
-      nextReset = now.add(Duration(days: 7 - now.weekday)); // Next Monday
+      // Calculate next Monday at midnight
+      int daysToAdd = (8 - now.weekday) % 7;
+      if (daysToAdd == 0) daysToAdd = 7; // ensure it's the next Monday
+      nextReset = DateTime(now.year, now.month, now.day).add(Duration(days: daysToAdd));
     } else if (type == 'monthly') {
-      nextReset = DateTime(now.year, now.month + 1, 1, 0, 0, 0); // First day of next month
+      // Already fixed: first day of next month at midnight
+      nextReset = DateTime(now.year, now.month + 1, 1);
     } else {
       return now.millisecondsSinceEpoch;
     }
-
+    
     return nextReset.millisecondsSinceEpoch;
   }
 
@@ -427,6 +451,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
                 decoration: const InputDecoration(labelText: "Mission Title"),
               ),
               // Description Input
+              const SizedBox(height: 10),
               TextField(
                 controller: descriptionController,
                 style: const TextStyle(color: Colors.white),
@@ -446,6 +471,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
                   selectedType = value!;
                 },
               ),
+              const SizedBox(height: 10),
               // Skill Sector Dropdown
               DropdownButtonFormField<String>(
                 dropdownColor: const Color(0xFF1C1C1C),
@@ -462,6 +488,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
                   selectedSkillSector = value!;
                 },
               ),
+              const SizedBox(height: 10),
               // Difficulty Selector
               DropdownButtonFormField<int>(
                 dropdownColor: const Color(0xFF1C1C1C),
@@ -475,6 +502,7 @@ class _MissionsScreenState extends State<MissionsScreen> {
                   selectedDifficulty = value!;
                 },
               ),
+              const SizedBox(height: 10),
               // Segments Selector (Max 10)
               DropdownButtonFormField<int>(
                 dropdownColor: const Color(0xFF1C1C1C),
@@ -602,6 +630,8 @@ class _MissionsScreenState extends State<MissionsScreen> {
                 int missionSkillPoints = _systemMissions[index]['skillpoints'] ?? 0;
                 String focusArea = _systemMissions[index]['skillsector'] ?? '';
                 completeMission(xpReward, missionSkillPoints, focusArea);
+
+                updateMissionAchievements(_systemMissions[index]);
               }
             });
 
@@ -620,30 +650,69 @@ class _MissionsScreenState extends State<MissionsScreen> {
   // ✅ Complete a mission, reward XP, and update skill stat
   void completeMission(int xpReward, int missionSkillPoints, String focusArea) async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // Update XP and level as before...
+
+    // Load XP, Level, and Refresh Tokens
     int currentXP = prefs.getInt('userXP') ?? 0;
     int currentLevel = prefs.getInt('userLevel') ?? 1;
+    int refreshTokens = prefs.getInt('refreshTokens') ?? 3; // Default to 3 if not set
 
     currentXP += xpReward;
     int xpThreshold = getXpThresholdForLevel(currentLevel);
 
+    // 🚀 Level-up logic
     while (currentXP >= xpThreshold) {
       currentXP -= xpThreshold;
       currentLevel++;
       xpThreshold = getXpThresholdForLevel(currentLevel);
+
+      // 🔥 Grant +3 Refresh Tokens on Level Up
+      refreshTokens += 3;
+
+      debugPrint("🎉 Level Up! New Level = $currentLevel, Refresh Tokens = $refreshTokens");
     }
 
+    // ✅ Save updated values to SharedPreferences
     await prefs.setInt('userXP', currentXP);
     await prefs.setInt('userLevel', currentLevel);
+    await prefs.setInt('refreshTokens', refreshTokens); // ✅ Save refresh tokens
 
+    // ✅ Skill Stat Update
     String normalizedFocusArea = focusArea.trim().toLowerCase();
     int currentSkillPercent = prefs.getInt('skillPercent_$normalizedFocusArea') ?? 0;
     currentSkillPercent += missionSkillPoints * 10;
     await prefs.setInt('skillPercent_$normalizedFocusArea', currentSkillPercent);
-    
+
+    debugPrint("🎯 Mission Completed: +$xpReward XP, $missionSkillPoints SP in $focusArea");
+    debugPrint("💎 Updated Refresh Tokens: $refreshTokens");
+
+    // ✅ Close the mission screen & return XP gained
     if (Navigator.canPop(context)) {
       Navigator.pop(context, xpReward);
+    }
+  }
+
+  void updateMissionAchievements(Map<String, dynamic> mission) {
+    String title = mission['title'];
+    String skillSector = mission['skillsector'];
+    String now = DateTime.now().toIso8601String(); // You can customize the date format if desired.
+
+    // Look for an existing entry with the same title and skill sector.
+    int index = missionAchievements.indexWhere(
+      (m) => m['title'] == title && m['skillsector'] == skillSector,
+    );
+
+    if (index != -1) {
+      // Already exists – increment timesCompleted and update the date.
+      missionAchievements[index]['timesCompleted'] += 1;
+      missionAchievements[index]['dateCompleted'] = now;
+    } else {
+      // Not found – add a new mission achievement entry.
+      missionAchievements.add({
+        'title': title,
+        'skillsector': skillSector,
+        'dateCompleted': now,
+        'timesCompleted': 1,
+      });
     }
   }
 
@@ -777,41 +846,24 @@ class _MissionsScreenState extends State<MissionsScreen> {
   }
 
   void _showCompletedMissions(BuildContext context) {
-    List<Map<String, dynamic>> completedMissions = [
-      ..._userMissions.where((m) => m['completed']),
-      ..._systemMissions.where((m) => m['completed']),
-    ];
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return CompletedMissionsScreen(completedMissions: missionAchievements);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0, 1); // Start from the bottom
+          const end = Offset.zero;
+          const curve = Curves.easeOut;
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Completed Missions'),
-          content: completedMissions.isEmpty
-              ? const Text("No missions completed yet. Keep going!")
-              : SizedBox(
-                  width: double.maxFinite,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: completedMissions.length,
-                    itemBuilder: (context, index) {
-                      final mission = completedMissions[index];
-                      return ListTile(
-                        title: Text(mission['title']),
-                        subtitle: Text(mission['description']),
-                        leading: const Icon(Icons.check_circle, color: Colors.green), // Completed icon
-                      );
-                    },
-                  ),
-                ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Close"),
-            ),
-          ],
-        );
-      },
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      ),
     );
   }
 

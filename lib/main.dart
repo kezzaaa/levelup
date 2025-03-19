@@ -41,6 +41,14 @@ void main() async {
   // Clear stored gaming sessions
   await prefs.remove('gamingSessions');
 
+  // Clear user tags
+  await prefs.remove('userPreferences');
+  await prefs.remove('answeredQuestions');
+  
+  // Clear tracked addicitions and habits
+  await prefs.remove('trackedAddictions');
+  await prefs.remove('trackedHabits');
+
   // Create and print user on start
   String? userId = await createGuestUser();
   debugPrint("🆔 Loaded guest user ID: $userId");

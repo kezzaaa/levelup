@@ -155,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _level++;
       xpThreshold = getXpThresholdForLevel(_level);
 
+      // Restore the users hearts to full
       heartsRemaining = 5;
       await prefs.setInt('heartsRemaining', heartsRemaining);
 
@@ -224,6 +225,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 "❤️ Your hearts have been fully restored! ❤️",
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "🔃 You gained +3 refresh tokens! 🔃",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.blue, fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -651,9 +657,12 @@ class _HomeScreenState extends State<HomeScreen> {
           style: const TextStyle(color: Colors.white),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.help_center_outlined, color: Colors.white),
-            onPressed: () => _showHomeTutorial(context),
+          Padding(
+            padding: const EdgeInsets.only(right: 15),
+            child: IconButton(
+              icon: const Icon(Icons.help_center_outlined, color: Colors.white),
+              onPressed: () => _showHomeTutorial(context),
+            ),
           ),
         ],
       ),

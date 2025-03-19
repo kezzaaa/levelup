@@ -1,5 +1,5 @@
 
-// ignore_for_file: library_private_types_in_public_api
+// ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, use_super_parameters
 
 // Packages
 import 'package:flutter/material.dart';
@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:math';
 
 // Files
 import 'login.dart';
@@ -42,6 +43,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     debugPrint("📤 Loaded Profile Path: $profilePath");
     debugPrint("📆 Join Date: $joinDate");
+  }
+
+  void _resetMissions() {
+    setState(() {
+      debugPrint("🔄 Resetting missions...");
+    });
   }
 
   @override
@@ -144,74 +151,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Row containing the title and button
+                // Title + Button Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Title: "Customise My Missions"
                     const Text(
                       "Customise My Missions",
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                    
-                    // Green Button: "Choose Exclusions"
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate to Exclusions Screen (to be implemented)
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ExclusionsScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green, // Green background
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                      ),
-                      child: const Text("Update Exclusions",
-                      style: TextStyle(color: Colors.white,
-                      fontSize: 14,
-                      )),
+
+                    Row(
+                      children: [
+                        // Trash Button: Clears all saved data
+                        IconButton(
+                          onPressed: () async {
+                            bool confirmDelete = await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text("Confirm Reset"),
+                                  content: const Text(
+                                    "Are you sure you want to clear all saved interests and mission preferences? \n\n"
+                                    "This action cannot be undone. \n\n"
+                                    "(Page must be refreshed)",
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false), // Cancel action
+                                      child: const Text("Cancel"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true), // Confirm action
+                                      child: const Text("Clear", style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+
+                            if (confirmDelete == true) {
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.remove('userPreferences'); // Clear saved preferences
+                              await prefs.remove('answeredQuestions'); // Clear dismissed questions
+
+                              debugPrint("🗑️ All saved tags and dismissed missions cleared.");
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.white, // White trash icon
+                            size: 24,
+                          ),
+                          tooltip: "Reset Preferences", // Shows on long-press
+                        ),
+                      ],
                     ),
                   ],
                 ),
 
                 const SizedBox(height: 12), // Space before rotating stack
 
-                // Swipeable Stack (PageView)
-                SizedBox(
-                  height: 150, // Set fixed height
-                  child: PageView.builder(
-                    itemCount: 5, // 5 questions
-                    controller: PageController(viewportFraction: 0.9), // Makes it look swipeable
-                    itemBuilder: (context, index) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 10),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1C1C1C),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            _questions[index], // Dynamic question text
-                            style: const TextStyle(fontSize: 16, color: Colors.white),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                // ✅ Add Swipeable Question Stack Here
+                SwipeableQuestionStack(onReset: _resetMissions),
+
+                const SizedBox(height: 30), // Space before settings button
               ],
             ),
-            const SizedBox(height: 30), // Space before settings button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -226,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: const Text(
-                  "Settings",
+                  "⚙️ Settings",
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
@@ -246,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: const Text(
-                  "Log Out",
+                  "🏃‍➡️ Log Out",
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
@@ -549,25 +554,209 @@ class HexagonClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-class ExclusionsScreen extends StatelessWidget {
-  const ExclusionsScreen({super.key});
+class Question {
+  final String text;
+  final String tag;
+
+  Question({required this.text, required this.tag});
+}
+
+class SwipeableQuestionStack extends StatefulWidget {
+  final VoidCallback onReset;
+
+  const SwipeableQuestionStack({Key? key, required this.onReset}) : super(key: key);
+
+  @override
+  _SwipeableQuestionStackState createState() => _SwipeableQuestionStackState();
+}
+
+class _SwipeableQuestionStackState extends State<SwipeableQuestionStack> {
+  final List<Question> _allQuestions = [
+    Question(text: "Are you vegetarian?", tag: "vegetarian"),
+  ];
+
+  List<Question> _questions = [];
+  Set<String> savedTags = {};
+  Set<String> answeredTags = {}; // Tracks answered questions by their tag
+  bool _currentCardIsHearted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedTags();
+    _loadAnsweredQuestions();
+  }
+
+  /// Load answered questions by their tags and filter them out
+  Future<void> _loadAnsweredQuestions() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      answeredTags = (prefs.getStringList('answeredQuestions') ?? []).toSet();
+      _questions = _allQuestions.where((q) => !answeredTags.contains(q.tag)).toList();
+      _questions.shuffle(Random()); // Randomize order on startup
+    });
+  }
+
+  /// Save answered question by tag
+  Future<void> _markQuestionAsAnswered(String tag) async {
+    final prefs = await SharedPreferences.getInstance();
+    answeredTags.add(tag);
+    await prefs.setStringList('answeredQuestions', answeredTags.toList());
+  }
+
+  Future<void> _loadSavedTags() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      savedTags = (prefs.getStringList('userPreferences') ?? []).toSet();
+    });
+  }
+
+  Future<void> _saveTag(String tag) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> storedTags = prefs.getStringList('userPreferences') ?? [];
+
+    if (!storedTags.contains(tag)) {
+      storedTags.add(tag);
+      await prefs.setStringList('userPreferences', storedTags);
+      setState(() {
+        savedTags.add(tag);
+      });
+      debugPrint("✅ Tag Saved: $tag");
+    }
+  }
+
+  void _removeCurrentQuestion() {
+    if (_questions.isNotEmpty) {
+      String removedTag = _questions.first.tag;
+      _questions.removeAt(0);
+      _markQuestionAsAnswered(removedTag);
+      setState(() {
+        _currentCardIsHearted = false;
+      });
+    }
+  }
+
+  void _toggleHeart() {
+    setState(() {
+      if (savedTags.contains(_questions[0].tag)) {
+        savedTags.remove(_questions[0].tag);
+        _currentCardIsHearted = false;
+      } else {
+        savedTags.add(_questions[0].tag);
+        _currentCardIsHearted = true;
+      }
+    });
+  }
+
+  void resetMissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userPreferences');
+    await prefs.remove('answeredQuestions');
+
+    setState(() {
+      answeredTags.clear();
+      savedTags.clear();
+      _questions = List.from(_allQuestions);
+      _questions.shuffle(Random());
+    });
+
+    debugPrint("🗑️ Questions and tags reset.");
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Choose Exclusions")),
-      body: const Center(child: Text("Exclusions selection coming soon!")),
+    return SizedBox(
+      height: 150,
+      width: MediaQuery.of(context).size.width * 0.9,
+      child: ClipRect(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          transitionBuilder: (child, animation) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 1), // New cards slide in from the bottom.
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            );
+          },
+          child: _questions.isEmpty
+              ? const Center(
+                  key: ValueKey("empty"),
+                  child: Text(
+                    "🏆 No more questions!",
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
+                )
+              : GestureDetector(
+                  key: ValueKey(_questions[0].tag),
+                  onDoubleTap: _toggleHeart,
+                  child: Dismissible(
+                    key: ValueKey<String>(_questions[0].tag),
+                    direction: DismissDirection.up,
+                    confirmDismiss: (direction) async {
+                      if (_currentCardIsHearted) {
+                        _saveTag(_questions[0].tag); // Save by tag
+                      }
+                      return true;
+                    },
+                    onDismissed: (direction) {
+                      _removeCurrentQuestion();
+                    },
+                    background: Align(
+                      alignment: Alignment.center,
+                      child: Icon(
+                        _currentCardIsHearted ? Icons.add : Icons.close,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C1C),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _questions[0].text,
+                            style: const TextStyle(fontSize: 16, color: Colors.white),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 10),
+                          IconButton(
+                            onPressed: _toggleHeart,
+                            icon: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (child, animation) {
+                                return ScaleTransition(scale: animation, child: child);
+                              },
+                              child: savedTags.contains(_questions[0].tag)
+                                  ? Icon(Icons.favorite, key: const ValueKey('filled'), color: Colors.red, size: 30)
+                                  : Icon(Icons.favorite_border, key: const ValueKey('border'), color: Colors.white, size: 30),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }
-
-final List<String> _questions = [
-  "Do you enjoy fitness-related challenges?",
-  "Are you interested in learning new skills?",
-  "Would you like gaming-related missions?",
-  "Do you prefer outdoor activities?",
-  "Are you okay with food-related missions?",
-];
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
