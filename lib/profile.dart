@@ -28,6 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _checkFirstTimeUser();
     _loadUserData();
   }
 
@@ -51,11 +52,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // ✅ Function to check if user has seen profile tutorial before
+  Future<void> _checkFirstTimeUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasSeenTutorial = prefs.getBool('hasSeenProfileTutorial') ?? false;
+
+    if (!hasSeenTutorial) {
+      // ✅ Show tutorial pop-up
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showProfileTutorial(context);
+      });
+
+      // ✅ Mark tutorial as seen
+      await prefs.setBool('hasSeenProfileTutorial', true);
+    }
+  }
+
+  void _showProfileTutorial(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Welcome to the Profile Page",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "• Edit your details ✏️\n"
+                  "• Pin achievements to your profile 🏅\n"
+                  "• Filter your missions with swipeable questions that make them more personalised! ⭐\n"
+                  "• Change settings ⚙️\n",
+                  textAlign: TextAlign.center,
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Got it!"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Your Account"),
+        title: Text(
+          "Your Account",
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 15),
+            child: IconButton(
+              icon: const Icon(Icons.help_center_outlined, color: Colors.white),
+              onPressed: () => _showProfileTutorial(context),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -412,7 +475,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Container(
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.black54, // ✅ Semi-transparent background
+                        color: Color(0xFF1C1C1C), // ✅ Semi-transparent background
                       ),
                       padding: const EdgeInsets.all(4),
                       child: const Icon(
@@ -436,12 +499,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: 75, // Reduced height
                 child: DropdownButtonFormField<String>(
                   value: _selectedGender,
-                  hint: const Text("Select Gender"),
+                  hint: Text(
+                    "Select Gender",
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
                   items: ['🚹 Male', '🚺 Female'].map((String value) {
                     return DropdownMenuItem(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (value) => setState(() => _selectedGender = value),
-                  dropdownColor:const Color(0xFF1C1C1C),
+                  dropdownColor:const Color(0xFF141414),
                   decoration: const InputDecoration(labelText: "Gender"),
                 ),
               ),
@@ -466,12 +532,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 height: 65,
                 child: DropdownButtonFormField<String>(
                   value: _selectedCountry,
-                  hint: const Text("Select Country"),
+                  hint: Text(
+                    "Select Country",
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
                   items: ['🦅 USA', '🍁 Canada', '☕ UK', '🐊 Australia'].map((String value) {
                     return DropdownMenuItem(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (value) => setState(() => _selectedCountry = value),
-                  dropdownColor:const Color(0xFF1C1C1C),
+                  dropdownColor:const Color(0xFF141414),
                   decoration: const InputDecoration(labelText: "Country"),
                 ),
               ),

@@ -12,6 +12,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'userutils.dart';
 import 'completedmissions.dart';
 
+extension StringCasingExtension on String {
+  String get toTitleCase {
+    if (isEmpty) return this;
+    return split(" ")
+        .map((word) => word.isNotEmpty
+            ? "${word[0].toUpperCase()}${word.substring(1).toLowerCase()}"
+            : "")
+        .join(" ");
+  }
+}
+
 enum SortOrder { none, asc, desc }
 SortOrder _userSortOrder = SortOrder.none;
 
@@ -374,37 +385,172 @@ class _MissionsScreenState extends State<MissionsScreen> {
 
   // ✅ Function to show missions tutorial pop-up
   void _showMissionsTutorial(BuildContext context) {
+    final PageController pageController = PageController();
+    const int totalPages = 5;
+    int currentPage = 0;
+
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "How to Use Missions",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              child: Container(
+                height: 300, // Set an appropriate height for your dialog
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // PageView for paginated content
+                    Expanded(
+                      child: PageView(
+                        controller: pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            currentPage = index;
+                          });
+                        },
+                        children: [
+                          // Page 1
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Welcome to the Missions Page",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Complete missions to earn XP and skill points, that level up your avatar. 🎁",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 2
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "LevelUp Missions",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "LevelUp missions are auto-generated and are themed based on your selected focus areas from before. They can be refreshed for new ones by swiping left ⬅️",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 3
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Your Missions",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "You can create your own missions with custom properties! Swipe left on user-created missions to delete them ❌",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 4
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Expanded Section",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Click the drop down to see a missions description, the difficulty, the XP it grants and the skill points it rewards! 🤩",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 5
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Get Started!",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "• Press the '+ Add' button to create custom missions! Or get started on a LevelUp mission! 📝\n\nStart your journey now! 🗺️",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Navigation Row: arrow buttons and page indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white,),
+                          onPressed: currentPage > 0
+                              ? () {
+                                  setState(() {
+                                    currentPage--;
+                                  });
+                                  pageController.previousPage(
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut);
+                                }
+                              : null,
+                        ),
+                        Text("${currentPage + 1}/$totalPages"),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                          onPressed: currentPage < totalPages - 1
+                              ? () {
+                                  setState(() {
+                                    currentPage++;
+                                  });
+                                  pageController.nextPage(
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut);
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                    // "Got it!" button to close the dialog
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Got it!"),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  "• Complete daily, weekly, and monthly missions to earn rewards.\n"
-                  "• Tap a mission to expand details and track progress.\n"
-                  "• Swipe left on user-created missions to delete them.\n"
-                  "• Press the '+ Add' button to create custom missions!\n\n"
-                  "Start your journey now!",
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Got it!"),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -415,9 +561,8 @@ class _MissionsScreenState extends State<MissionsScreen> {
     TextEditingController titleController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     int selectedDifficulty = 1;
-    int selectedSegments = 1;
     String selectedType = 'daily'; // Default to daily
-    String selectedSkillSector = 'fitness'; // Default skill sector
+    String selectedSkillSector = ''; // Default skill sector
     List<String> skillSectors = [
       'fitness',
       'diet',
@@ -439,115 +584,269 @@ class _MissionsScreenState extends State<MissionsScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Add New Mission', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Title Input
-              TextField(
-                controller: titleController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Mission Title"),
+        // A local variable in the dialog scope
+        int localSelectedSegments = 1;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF1C1C1C),
+              title: const Text(
+                'Add New Mission',
+                style: TextStyle(color: Colors.white),
               ),
-              // Description Input
-              const SizedBox(height: 10),
-              TextField(
-                controller: descriptionController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Mission Description"),
+              content: SizedBox(
+                width: 300,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Mission Title
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(
+                          labelText: "Mission Title",
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLength: 30,
+                      ),
+                      const SizedBox(height: 20),
+                      // Mission Description (multiple lines, smaller text)
+                      TextField(
+                        controller: descriptionController,
+                        maxLines: 3,
+                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: "Mission Description",
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLength: 100,
+                      ),
+                      const SizedBox(height: 20),
+                      // Mission Type Dropdown
+                      DropdownButtonFormField<String>(
+                        dropdownColor: const Color(0xFF141414),
+                        value: selectedType,
+                        decoration: const InputDecoration(
+                          labelText: "Mission Type",
+                        ),
+                        items: ['daily', 'weekly', 'monthly'].map((type) {
+                          return DropdownMenuItem(
+                            value: type,
+                            child: Text(
+                              type.toTitleCase,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          selectedType = value!;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      // Skill Sector Search Field using Autocomplete
+                      Autocomplete<String>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return skillSectors;
+                          }
+                          return skillSectors.where((String option) {
+                            return option
+                                .toLowerCase()
+                                .contains(textEditingValue.text.toLowerCase());
+                          });
+                        },
+                        // Custom options view with a dark grey background and title-cased values.
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              color: const Color(0xFF141414),
+                              child: SizedBox(
+                                width: 280,
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    final String option = options.elementAt(index);
+                                    return ListTile(
+                                      title: Text(
+                                        option.toTitleCase,
+                                        style: const TextStyle(color: Colors.white),
+                                      ),
+                                      onTap: () {
+                                        onSelected(option.toTitleCase);
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        onSelected: (String selection) {
+                          selectedSkillSector = selection;
+                        },
+                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: "Skill Sector",
+                              hintText: "Leave blank for none",
+                              suffixIcon: const Icon(Icons.search, color: Colors.white), // Search icon on the right.
+                            ),
+                            style: const TextStyle(color: Colors.white),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      // Difficulty Selector
+                      DropdownButtonFormField<int>(
+                        dropdownColor: const Color(0xFF141414),
+                        value: selectedDifficulty,
+                        decoration: const InputDecoration(
+                          labelText: "Difficulty",
+                        ),
+                        items: List.generate(3, (i) => i + 1).map((diff) {
+                          return DropdownMenuItem(
+                            value: diff,
+                            child: Text(
+                              "⭐" * diff,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          selectedDifficulty = value!;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      // Segments Section
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Segments",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                          const SizedBox(height: 15),
+                          SizedBox(
+                            height: 40,
+                            child: Row(
+                              children: [
+                                // "N/A" (represents value 1)
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setDialogState(() {
+                                        localSelectedSegments = 1;
+                                      });
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1C1C1C),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: localSelectedSegments == 1
+                                              ? Colors.white
+                                              : Colors.transparent,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          "N/A",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Options 2 through 5
+                                ...List.generate(4, (index) => index + 2).map((seg) {
+                                  return Expanded(
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setDialogState(() {
+                                          localSelectedSegments = seg;
+                                        });
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1C1C1C),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: localSelectedSegments == seg
+                                                ? Colors.white
+                                                : Colors.transparent,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            "$seg",
+                                            style: const TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 10),
-              // Mission Type Dropdown
-              DropdownButtonFormField<String>(
-                dropdownColor: const Color(0xFF1C1C1C),
-                value: selectedType,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Mission Type"),
-                items: ['daily', 'weekly', 'monthly'].map((type) {
-                  return DropdownMenuItem(value: type, child: Text(type));
-                }).toList(),
-                onChanged: (value) {
-                  selectedType = value!;
-                },
-              ),
-              const SizedBox(height: 10),
-              // Skill Sector Dropdown
-              DropdownButtonFormField<String>(
-                dropdownColor: const Color(0xFF1C1C1C),
-                value: selectedSkillSector,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Skill Sector"),
-                items: skillSectors.map((sector) {
-                  return DropdownMenuItem(
-                    value: sector,
-                    child: Text(sector.toUpperCase()),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  selectedSkillSector = value!;
-                },
-              ),
-              const SizedBox(height: 10),
-              // Difficulty Selector
-              DropdownButtonFormField<int>(
-                dropdownColor: const Color(0xFF1C1C1C),
-                value: selectedDifficulty,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Difficulty"),
-                items: List.generate(3, (i) => i + 1).map((diff) {
-                  return DropdownMenuItem(value: diff, child: Text("⭐" * diff));
-                }).toList(),
-                onChanged: (value) {
-                  selectedDifficulty = value!;
-                },
-              ),
-              const SizedBox(height: 10),
-              // Segments Selector (Max 10)
-              DropdownButtonFormField<int>(
-                dropdownColor: const Color(0xFF1C1C1C),
-                value: selectedSegments,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "Segments"),
-                items: List.generate(10, (i) => i + 1).map((seg) {
-                  return DropdownMenuItem(value: seg, child: Text("$seg"));
-                }).toList(),
-                onChanged: (value) {
-                  selectedSegments = value!;
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white)),
-            ),
-            TextButton(
-              onPressed: () {
-                if (titleController.text.trim().isNotEmpty) {
-                  setState(() {
-                    _userMissions.add({
-                      "id": DateTime.now().millisecondsSinceEpoch + Random().nextInt(1000),
-                      'title': titleController.text,
-                      'description': descriptionController.text,
-                      'type': selectedType,
-                      'skillsector': selectedSkillSector, // Added skillsector
-                      'difficulty': selectedDifficulty,
-                      'segments': selectedSegments,
-                      'progress': 0,
-                      'completed': false,
-                      'removing': false,
-                      'expanded': false,
-                    });
-                  });
-                  debugPrint("📌 New Mission Added: ${_userMissions.last}");
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Add', style: TextStyle(color: Colors.white)),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (titleController.text.trim().isNotEmpty) {
+                      setState(() {
+                        _userMissions.add({
+                          "id": DateTime.now().millisecondsSinceEpoch +
+                              Random().nextInt(1000),
+                          'title': titleController.text,
+                          'description': descriptionController.text,
+                          'type': selectedType,
+                          'skillsector': selectedSkillSector,
+                          'difficulty': selectedDifficulty,
+                          'segments': localSelectedSegments,
+                          'progress': 0,
+                          'completed': false,
+                          'removing': false,
+                          'expanded': false,
+                        });
+                      });
+                      debugPrint(
+                          "📌 New Mission Added: Title - ${titleController.text}");
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    'Add',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

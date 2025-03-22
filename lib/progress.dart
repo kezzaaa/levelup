@@ -60,6 +60,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   void initState() {
     super.initState();
+    _checkFirstTimeUser();
     _loadFocusAreas();
     _loadTrackedHabits();
     _loadTrackedAddictions();
@@ -74,6 +75,57 @@ class _ProgressScreenState extends State<ProgressScreen> {
   void dispose() {
     _addictionTimer?.cancel();
     super.dispose();
+  }
+
+  // ✅ Function to check if user has seen progress tutorial before
+  Future<void> _checkFirstTimeUser() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool hasSeenTutorial = prefs.getBool('hasSeenProgressTutorial') ?? false;
+
+    if (!hasSeenTutorial) {
+      // ✅ Show tutorial pop-up
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _showProgressTutorial(context);
+      });
+
+      // ✅ Mark tutorial as seen
+      await prefs.setBool('hasSeenProgressTutorial', true);
+    }
+  }
+
+  void _showProgressTutorial(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Welcome to the Progress Page",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Edit your life focuses and see their current level 💫\n"
+                  "Earn and see your achievements by clicking the medal icon 🏅\n"
+                  "Set habits and mark them off daily 📑\n"
+                  "Wanting to quit something? Use the addiction tracker! ❌\n",
+                  textAlign: TextAlign.center,
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Got it!"),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadFocusAreas() async {
@@ -152,8 +204,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   final List<IconData> _iconChoices = [
     FontAwesomeIcons.dumbbell,
-    FontAwesomeIcons.book,
-    FontAwesomeIcons.apple,
+    FontAwesomeIcons.appleWhole,
     FontAwesomeIcons.briefcase,
     FontAwesomeIcons.book,
     FontAwesomeIcons.droplet,
@@ -161,11 +212,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
     FontAwesomeIcons.drum,
     FontAwesomeIcons.music,
     FontAwesomeIcons.paintbrush,
+    FontAwesomeIcons.personWalking,
+    FontAwesomeIcons.car,
+    FontAwesomeIcons.cartShopping,
   ];
   
   final List<String> _weekDays = ["M", "T", "W", "T", "F", "S", "S"];
 
   void _addHabitDialog() {
+    // Make selectedIcon mutable by not using final.
     IconData selectedIcon = _iconChoices.first;
     Color selectedColor = Colors.blue;
     TextEditingController nameController = TextEditingController();
@@ -176,83 +231,105 @@ class _ProgressScreenState extends State<ProgressScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text("Add New Habit"),
-          content: StatefulBuilder(
-            builder: (context, setStateDialog) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: "Habit Name",
-                      border: OutlineInputBorder(),
+          content: SizedBox(
+            width: 350,
+            child: StatefulBuilder(
+              builder: (context, setStateDialog) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: "Habit Name",
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: descController,
-                    decoration: const InputDecoration(
-                      labelText: "Description",
-                      border: OutlineInputBorder(),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: descController,
+                      decoration: const InputDecoration(
+                        labelText: "Description",
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<IconData>(
-                    value: selectedIcon,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: "Choose Icon",
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (IconData? newValue) {
-                      setStateDialog(() {
-                        selectedIcon = newValue!;
-                      });
-                    },
-                    items: _iconChoices.map((icon) {
-                      return DropdownMenuItem<IconData>(
-                        value: icon,
-                        child: Icon(icon, size: 24),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      const Text("Choose Colour: "),
-                      GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text("Pick a color"),
-                              content: BlockPicker(
-                                pickerColor: selectedColor,
-                                onColorChanged: (Color color) {
-                                  setStateDialog(() {
-                                    selectedColor = color;
-                                  });
-                                  Navigator.pop(context);
-                                },
+                    const SizedBox(height: 20),
+                    // Icon grid replacement
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Choose Icon",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        GridView.count(
+                          crossAxisCount: 4,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: _iconChoices.map((icon) {
+                            bool isSelected = icon == selectedIcon;
+                            return GestureDetector(
+                              onTap: () {
+                                setStateDialog(() {
+                                  selectedIcon = icon;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  border: isSelected
+                                      ? Border.all(color: Colors.white, width: 2)
+                                      : null,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(icon, size: 24, color: Colors.white),
                               ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // Colour picker remains unchanged.
+                    Row(
+                      children: [
+                        const Text("Choose Colour: "),
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text("Pick a color"),
+                                content: BlockPicker(
+                                  pickerColor: selectedColor,
+                                  onColorChanged: (Color color) {
+                                    setStateDialog(() {
+                                      selectedColor = color;
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: selectedColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.black),
                             ),
-                          );
-                        },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: selectedColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.black),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           actions: [
             TextButton(
@@ -261,7 +338,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
             ),
             TextButton(
               onPressed: () {
-                // Inside _addHabitDialog "Add" onPressed:
                 if (nameController.text.isNotEmpty) {
                   setState(() {
                     _trackedHabits.add({
@@ -401,8 +477,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SizedBox(height: 20),
                   DropdownButtonFormField<Map<String, dynamic>>(
-                    dropdownColor: const Color(0xFF1C1C1C),
+                    dropdownColor: const Color(0xFF141414),
                     value: selectedAddiction,
                     isExpanded: true,
                     decoration: const InputDecoration(
@@ -423,7 +500,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   ),
                   const SizedBox(height: 20),
                   DropdownButtonFormField<Map<String, dynamic>>(
-                    dropdownColor: const Color(0xFF1C1C1C),
+                    dropdownColor: const Color(0xFF141414),
                     value: selectedTimeFrame,
                     isExpanded: true,
                     decoration: const InputDecoration(
@@ -513,10 +590,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
         title: const Text("Your Progress"),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 15),
+            padding: const EdgeInsets.only(right: 0),
             child: IconButton(
               icon: const Icon(FontAwesomeIcons.medal, color: Colors.white),
               onPressed: () => (),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 15),
+            child: IconButton(
+              icon: const Icon(Icons.help_center_outlined, color: Colors.white),
+              onPressed: () => _showProgressTutorial(context),
             ),
           ),
         ],
@@ -653,198 +737,210 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     }).toList(),
                   ),
               const SizedBox(height: 20),
-              // Habit Tracker
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Habit Tracker:",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        onPressed: _addHabitDialog,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _trackedHabits.isEmpty
-                  ? Center(
-                      child: Text(
-                        "No habits currently being tracked.",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey,
+              SizedBox(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Habit Tracker:",
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
-                      ),
-                    )
-                  : Column(
-                    children: _trackedHabits.map((habit) {
-                      // Convert the stored color and icon values if needed.
-                      final habitColor = habit["color"] is int
-                        ? Color(habit["color"])
-                        : habit["color"];
-                      final iconData = habit["icon"] is int
-                        ? ((habit["fontFamily"] == "FontAwesomeSolid" ||
-                            habit["fontFamily"] == "FontAwesomeBrands" ||
-                            habit["fontFamily"] == "FontAwesomeRegular")
-                            ? IconData(habit["icon"],
-                                fontFamily: habit["fontFamily"],
-                                fontPackage: "font_awesome_flutter")
-                            : IconData(habit["icon"], fontFamily: habit["fontFamily"]))
-                        : habit["icon"];
-                      final int habitIndex = _trackedHabits.indexOf(habit);
-                      final int currentDayIndex = DateTime.now().weekday - 1;
+                        IconButton(
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          onPressed: _addHabitDialog,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _trackedHabits.isEmpty
+                        ? Center(
+                            child: Text(
+                              "No habits currently being tracked.",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          )
+                        : Column(
+                            children: _trackedHabits.map((habit) {
+                              // Convert the stored color and icon values if needed.
+                              final habitColor = habit["color"] is int
+                                  ? Color(habit["color"])
+                                  : habit["color"];
+                              final iconData = habit["icon"] is int
+                                  ? ((habit["fontFamily"] == "FontAwesomeSolid" ||
+                                          habit["fontFamily"] == "FontAwesomeBrands" ||
+                                          habit["fontFamily"] == "FontAwesomeRegular")
+                                      ? IconData(habit["icon"],
+                                          fontFamily: habit["fontFamily"],
+                                          fontPackage: "font_awesome_flutter")
+                                      : IconData(habit["icon"],
+                                          fontFamily: habit["fontFamily"]))
+                                  : habit["icon"];
+                              final int habitIndex = _trackedHabits.indexOf(habit);
+                              final int currentDayIndex = DateTime.now().weekday - 1;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: habitColor.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white, width: 1.5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Top Row: Icon, Habit Name, Check Icon, and Three Dots.
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Habit Icon, Name, and Description.
-                                Row(
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  // Use withAlpha() if you want transparency.
+                                  color: habitColor.withAlpha(50),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const SizedBox(width: 10),
-                                    Icon(iconData, color: habitColor, size: 28),
-                                    const SizedBox(width: 20),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                    // Top Row: Icon, Habit Name, Check Icon, and Three Dots.
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment: CrossAxisAlignment.start, // So the top of each side lines up
                                       children: [
-                                        Text(
-                                          habit["name"],
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
+                                        // Left side: Icon + Name + Description
+                                        Flexible(
+                                          fit: FlexFit.loose, // Let this side take only as much width as it needs
+                                          child: Row(
+                                            children: [
+                                              const SizedBox(width: 10),
+                                              Icon(iconData, color: habitColor, size: 28),
+                                              const SizedBox(width: 20),
+                                              // Force text to wrap instead of overflowing
+                                              Flexible(
+                                                fit: FlexFit.loose,
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      habit["name"],
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                      softWrap: true, // Wrap onto new line if needed
+                                                      maxLines: 2,    // Limit to 2 lines if you want
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    if (habit["description"].isNotEmpty)
+                                                      Text(
+                                                        habit["description"],
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.white70,
+                                                        ),
+                                                        softWrap: true,
+                                                        maxLines: 3, // e.g., 3 lines max
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        if (habit["description"].isNotEmpty)
-                                          Text(
-                                            habit["description"],
+
+                                        // Right side: Check Icon & Three Dots
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: Icon(
+                                                (habit["marked"] ?? false) ? Icons.check_circle : Icons.check_circle_outline,
+                                                color: (habit["marked"] ?? false) ? habitColor : Colors.white70,
+                                              ),
+                                              onPressed: () {
+                                                setState(() {
+                                                  habit["marked"] = !(habit["marked"] ?? false);
+                                                  habit["days"][currentDayIndex] = habit["marked"];
+                                                });
+                                                _saveTrackedHabits();
+                                              },
+                                            ),
+                                            PopupMenuButton<String>(
+                                              icon: const Icon(Icons.more_vert, color: Colors.white),
+                                              onSelected: (String choice) {
+                                                if (choice == 'Remove') {
+                                                  setState(() {
+                                                    _trackedHabits.removeAt(habitIndex);
+                                                  });
+                                                }
+                                              },
+                                              itemBuilder: (BuildContext context) => [
+                                                const PopupMenuItem<String>(
+                                                  value: 'Remove',
+                                                  child: Text('Remove Habit'),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Weekday Labels.
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: _weekDays.map((day) {
+                                        return SizedBox(
+                                          width: 42.5,
+                                          child: Text(
+                                            day,
+                                            textAlign: TextAlign.center,
                                             style: const TextStyle(
-                                              fontSize: 12,
                                               color: Colors.white70,
+                                              fontSize: 12,
                                             ),
                                           ),
-                                      ],
+                                        );
+                                      }).toList(),
                                     ),
-                                  ],
-                                ),
-                                // Check Icon and Three Dots.
-                                Row(
-                                  children: [
-                                    const SizedBox(width: 10),
-                                    IconButton(
-                                      icon: Icon(
-                                        (habit["marked"] ?? false)
-                                            ? Icons.check_circle
-                                            : Icons.check_circle_outline,
-                                        color: (habit["marked"] ?? false)
-                                            ? habitColor
-                                            : Colors.white70,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          habit["marked"] = !(habit["marked"] ?? false);
-                                          habit["days"][currentDayIndex] = habit["marked"];
-                                        });
-                                        // Save the new days state to SharedPreferences
-                                        _saveTrackedHabits();
-                                      },
-                                    ),
-                                    const SizedBox(width: 10),
-                                    PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_vert, color: Colors.white),
-                                      onSelected: (String choice) {
-                                        if (choice == 'Remove') {
-                                          setState(() {
-                                            _trackedHabits.removeAt(habitIndex);
-                                          });
-                                        }
-                                      },
-                                      itemBuilder: (BuildContext context) => [
-                                        const PopupMenuItem<String>(
-                                          value: 'Remove',
-                                          child: Text('Remove Habit'),
+                                    // Weekday Progress Row with Expand Icon.
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Weekday Boxes.
+                                        Row(
+                                          children: List.generate(7, (dayIndex) {
+                                            final bool isPastDay =
+                                                dayIndex < DateTime.now().weekday - 1;
+                                            return Container(
+                                              margin: const EdgeInsets.symmetric(
+                                                  horizontal: 8.75),
+                                              width: 25,
+                                              height: 25,
+                                              decoration: BoxDecoration(
+                                                color: habit["days"][dayIndex]
+                                                    ? habitColor
+                                                    : (isPastDay
+                                                        ? Colors.grey[800]
+                                                        : Colors.grey[700]),
+                                                borderRadius: BorderRadius.circular(5),
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                        // Expand Icon.
+                                        IconButton(
+                                          icon: const Icon(FontAwesomeIcons.expand,
+                                              color: Colors.white),
+                                          onPressed: () {
+                                            // Expand functionality (Placeholder).
+                                          },
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Weekday Labels.
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: _weekDays.map((day) {
-                                return SizedBox(
-                                  width: 42.5,
-                                  child: Text(
-                                    day,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            // Weekday Progress Row with Expand Icon.
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Weekday Boxes.
-                                Row(
-                                  children: List.generate(7, (dayIndex) {
-                                    final bool isPastDay =
-                                        dayIndex < DateTime.now().weekday - 1;
-                                    return Container(
-                                      margin:
-                                          const EdgeInsets.symmetric(horizontal: 8.75),
-                                      width: 25,
-                                      height: 25,
-                                      decoration: BoxDecoration(
-                                        color: habit["days"][dayIndex]
-                                            ? habitColor
-                                            : (isPastDay
-                                                ? Colors.grey[800]
-                                                : Colors.grey[700]),
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
-                                    );
-                                  }),
-                                ),
-                                // Expand Icon.
-                                IconButton(
-                                  icon: const Icon(FontAwesomeIcons.expand, color: Colors.white),
-                                  onPressed: () {
-                                    // Expand functionality (Placeholder).
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                              );
+                            }).toList(),
+                          ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               // Addiction Tracker Section with Title Row & Plus Icon

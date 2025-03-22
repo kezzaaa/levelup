@@ -208,9 +208,9 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text(
-            "🎉 Level Up! 🎉",
+            "Level Up! 🎉",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.cyan, fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -226,10 +226,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 10),
               Text(
                 "🔃 You gained +3 refresh tokens! 🔃",
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.blue, fontSize: 14, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.cyan, fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -613,36 +614,159 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showHomeTutorial(BuildContext context) {
+    final PageController pageController = PageController();
+    const int totalPages = 4;
+    int currentPage = 0;
+
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Welcome to the Home Page",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              child: Container(
+                height: 325, // adjust the height as needed
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // PageView to segment content into pages
+                    Expanded(
+                      child: PageView(
+                        controller: pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            currentPage = index;
+                          });
+                        },
+                        children: [
+                          // Page 1: Home Explanation
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Welcome to the Home Page",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Here is the hub for most of LevelUp's main features! Learn more about them by clicking the arrow below ⬇️",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 2: Avatar Customisation
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Your Avatar",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "View and customise the avatar you made earlier and make them do dances! 🕺",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 3: Avatar Level
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Avatar Level",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "See your current avatar level, this will be increased upon completing missions 🔵",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                          // Page 4: Gaming Sessions and Hearts
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                "Gaming Sessions",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Track your gaming sessions, but be careful: if you go over your set limit, you'll lose a heart! 💔\n\n"
+                                "Hearts can be restored upon level up! ⬆️",
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Navigation row with white arrow icons and page indicator
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: currentPage > 0
+                              ? () {
+                                  setState(() {
+                                    currentPage--;
+                                  });
+                                  pageController.previousPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                }
+                              : null,
+                        ),
+                        Text(
+                          "${currentPage + 1}/$totalPages",
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Colors.white),
+                          onPressed: currentPage < totalPages - 1
+                              ? () {
+                                  setState(() {
+                                    currentPage++;
+                                  });
+                                  pageController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                }
+                              : null,
+                        ),
+                      ],
+                    ),
+                    // "Got it!" button to dismiss the dialog
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Got it!"),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  "• Customise your avatar and make them do funny dances.\n"
-                  "• See your current avatar level.\n"
-                  "• Track your gaming sessions, but be careful, if you go over your set limit, you'll lose a heart!.\n"
-                  "• Hearts can be restored upon level up!\n",
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Got it!"),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -654,7 +778,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(
           "Welcome back, ${widget.name}!",
-          style: const TextStyle(color: Colors.white),
         ),
         actions: [
           Padding(

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';  
+import 'package:flutter/services.dart';
 
 // Files
 import 'package:levelup/nav.dart';
@@ -360,7 +361,7 @@ class _GenderQuestionScreenState extends State<GenderQuestionScreen> {
           
           RadioListTile<String>(
             title: const Text("🚹 Male"),
-            value: "Male",
+            value: "🚹 Male",
             groupValue: _selectedGender,
             onChanged: (value) {
               setState(() {
@@ -370,7 +371,7 @@ class _GenderQuestionScreenState extends State<GenderQuestionScreen> {
           ),
           RadioListTile<String>(
             title: const Text("🚺 Female"),
-            value: "Female",
+            value: "🚺 Female",
             groupValue: _selectedGender,
             onChanged: (value) {
               setState(() {
@@ -542,9 +543,9 @@ class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
                 ),
                 child: DropdownButtonFormField<String>(
                   value: _selectedCountry,
-                  hint: const Text(
+                  hint: Text(
                     "Select Country",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.grey[700]),
                   ),
                   items: ['🦅 USA', '🍁 Canada', '☕ UK', '🐊 Australia']
                       .map<DropdownMenuItem<String>>((String value) {
@@ -721,15 +722,37 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
   }
 
   Future<void> _createAccount() async {
-    final username = _usernameController.text;
+    final username = _usernameController.text; // This won't include the "@" prefixText
     final password = _passwordController.text;
 
+    // New regular expression: Only letters and numbers.
+    final usernamePattern = RegExp(r'^[A-Za-z0-9]+$');
+    if (!usernamePattern.hasMatch(username)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Username can only contain letters and numbers."),
+          backgroundColor: Colors.red
+        ),
+      );
+      return;
+    }
+    if (password.contains(' ')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password cannot contain spaces."),
+          backgroundColor: Colors.red
+        ),
+      );
+      return;
+    }
+
+    // If valid, save the credentials
     if (username.isNotEmpty && password.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('username', username);
       await prefs.setString('password', password);
 
-      // ✅ Get and store the current date as "joinDate"
+      // Get and store the current date as "joinDate"
       String formattedDate = "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
       await prefs.setString('joinDate', formattedDate);
 
@@ -777,8 +800,13 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
               decoration: const InputDecoration(
                 labelText: 'Username',
                 border: OutlineInputBorder(),
+                prefixText: '@', // This displays an "@" before the text
               ),
               textInputAction: TextInputAction.next,
+              inputFormatters: [
+                FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+              ],
               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             ),
             const SizedBox(height: 20),
@@ -798,6 +826,9 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
               ),
               obscureText: !_isPasswordVisible,
               textInputAction: TextInputAction.done,
+              inputFormatters: [
+                FilteringTextInputFormatter.deny(RegExp(r'\s')),
+              ],
             ),
             const SizedBox(height: 20),
             ValueListenableBuilder<bool>(

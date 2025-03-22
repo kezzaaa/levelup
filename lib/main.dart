@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Files
 import 'signupprocess.dart';
 import 'userutils.dart';
-import 'progress.dart';
+// import 'progress.dart';
 
 void main() async {
   // Ensure Flutter is initialized before fetching SharedPreferences
@@ -19,35 +19,35 @@ void main() async {
   // await prefs.clear();
 
   // Clear XP for testing purposes
-  await prefs.setInt('userXP', 0);
-  await prefs.setInt('userLevel', 1);
+  // await prefs.setInt('userXP', 0);
+  // await prefs.setInt('userLevel', 1);
 
   // Reset refresh tokens
-  await prefs.setInt('refreshTokens', 3);
+  // await prefs.setInt('refreshTokens', 3);
 
   // Reset active missions
-  await prefs.remove('completedMissions');
-  await prefs.remove('activeSystemMissions');
+  // await prefs.remove('completedMissions');
+  // await prefs.remove('activeSystemMissions');
 
   // Remove focus areas
   // await prefs.remove('userFocuses');
 
   // Remove profile picture
-  await prefs.remove('profilePath');
+  // await prefs.remove('profilePath');
 
   // Reset skill bars for testing
-  await resetAllSkillBars();
+  // await resetAllSkillBars();
 
   // Clear stored gaming sessions
-  await prefs.remove('gamingSessions');
+  // await prefs.remove('gamingSessions');
 
   // Clear user tags
-  await prefs.remove('userPreferences');
-  await prefs.remove('answeredQuestions');
+  // await prefs.remove('userPreferences');
+  // await prefs.remove('answeredQuestions');
   
   // Clear tracked addicitions and habits
-  await prefs.remove('trackedAddictions');
-  await prefs.remove('trackedHabits');
+  // await prefs.remove('trackedAddictions');
+  // await prefs.remove('trackedHabits');
 
   // Create and print user on start
   String? userId = await createGuestUser();
@@ -80,6 +80,7 @@ class MyApp extends StatelessWidget {
           backgroundColor: const Color(0xFF1C1C1C),
         ),
         dialogTheme: DialogTheme(
+          backgroundColor: Color(0xFF1C1C1C),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: const BorderSide(color: Colors.white, width: 1.5),
@@ -91,6 +92,8 @@ class MyApp extends StatelessWidget {
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
+          labelStyle: TextStyle(color: Colors.white),
+          floatingLabelStyle: TextStyle(color: Colors.white),
           floatingLabelBehavior: FloatingLabelBehavior.always,
           filled: true,
           fillColor: const Color(0xFF1C1C1C), // Adjust if needed
@@ -135,7 +138,7 @@ class MyApp extends StatelessWidget {
             return null; // No check color when unselected
           }),
         ),
-        scaffoldBackgroundColor: Colors.grey.shade900,
+        scaffoldBackgroundColor: Color(0xFF212121),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(fontSize: 18, color: Colors.white),
           bodyMedium: TextStyle(fontSize: 16, color: Colors.white),
