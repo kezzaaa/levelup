@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ✅ Load avatar data from SharedPreferences and update the UI
   Future<void> _loadAvatar() async {
     final prefs = await SharedPreferences.getInstance();
-    final ProfileData? profile = userFromPrefs(prefs);
+    final ProfileData? profile = build3DAvatarUrl(prefs);
 
     if (profile != null && profile.avatarUrl != null) {
       setState(() {
@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((shouldReload) async {
       if (shouldReload == true) {
         // ✅ Fetch updated avatar URL
-        final ProfileData? updatedProfile = userFromPrefs(prefs);
+        final ProfileData? updatedProfile = build3DAvatarUrl(prefs);
         if (updatedProfile != null && updatedProfile.avatarUrl != null) {
           setState(() {
             srcGlb = updatedProfile.avatarUrl!;

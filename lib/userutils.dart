@@ -12,7 +12,7 @@ Future<void> loadHtmlFromAssets(WebViewController controller, String asset) asyn
 }
 
 // Function to retrieve and process the avatar data from SharedPreferences
-ProfileData? userFromPrefs(SharedPreferences prefs) {
+ProfileData? build3DAvatarUrl(SharedPreferences prefs) {
   final Map<String, dynamic> json =
     jsonDecode(prefs.getString('avatar') ?? '{}');
   if (json.isNotEmpty) {
@@ -20,6 +20,20 @@ ProfileData? userFromPrefs(SharedPreferences prefs) {
     return ProfileData(avatarUrl);
   }
   return null;
+}
+
+String build2DAvatarUrl(String fullAvatarUrl) {
+  const String baseUrl = "https://models.readyplayer.me/";
+  // If the fullAvatarUrl starts with the baseUrl and ends with .glb,
+  // extract the avatar id from it.
+  if (fullAvatarUrl.startsWith(baseUrl)) {
+    // Remove the base and the .glb extension
+    String id = fullAvatarUrl.substring(baseUrl.length).replaceAll('.glb', '');
+    // Construct the 2D image URL using the id
+    return "$baseUrl$id.png?blendShapes[mouthSmile]=0.8";
+  }
+  // Otherwise, fallback to the original URL.
+  return fullAvatarUrl;
 }
 
 Future<String?> createGuestUser() async {

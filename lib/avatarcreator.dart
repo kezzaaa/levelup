@@ -117,7 +117,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
           debugPrint('✅ Avatar URL Saved: ${message.message}');
 
           // ✅ Retrieve and process avatar data
-          final user = userFromPrefs(widget.prefs);
+          final user = build3DAvatarUrl(widget.prefs);
           if (user != null) {
             debugPrint('✅ Avatar URL Loaded: ${user.avatarUrl}');
             if (mounted) {
@@ -156,8 +156,8 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  "Use the leftmost icon to edit your avatar’s gender/body type. You can also randomize the appearance.\n\n"
-                  "Tap on different icons to change your avatar’s appearance, and press 'Next →' when done!",
+                  "Use the leftmost icon to edit your avatar’s gender/body type. You can also randomise the appearance 😀\n\n"
+                  "Tap on different icons to change your avatar’s appearance, and press 'Next →' when done! 🤩",
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),

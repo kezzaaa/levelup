@@ -547,7 +547,7 @@ class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
                     "Select Country",
                     style: TextStyle(color: Colors.grey[700]),
                   ),
-                  items: ['🦅 USA', '🍁 Canada', '☕ UK', '🐊 Australia']
+                  items: ['🇺🇸 USA', '🇨🇦 Canada', '🇬🇧 UK', '🇦🇺 Australia']
                       .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,

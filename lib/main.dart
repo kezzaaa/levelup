@@ -47,7 +47,7 @@ void main() async {
   
   // Clear tracked addicitions and habits
   // await prefs.remove('trackedAddictions');
-  // await prefs.remove('trackedHabits');
+  await prefs.remove('trackedHabits');
 
   // Create and print user on start
   String? userId = await createGuestUser();

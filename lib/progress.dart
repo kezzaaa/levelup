@@ -171,17 +171,61 @@ class _ProgressScreenState extends State<ProgressScreen> {
         "color": habit["color"],
         "days": habit["days"],
         "marked": habit["marked"],
+        // Save the last marked date as an ISO string:
+        "lastMarkedDate": habit["lastMarkedDate"] ?? DateTime.now().toIso8601String(),
       });
     }).toList();
     await prefs.setStringList('trackedHabits', habitsJson);
   }
 
+  // Helper function: checks if two dates are on the same day
+  bool isSameDay(DateTime d1, DateTime d2) {
+    return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
+  }
+
+  // Helper function to compute a simple week number for a given date.
+  // (This is a simplified calculation; adjust if you need strict ISO week numbers.)
+  int weekNumber(DateTime date) {
+    // Get the first day of the year.
+    DateTime firstDayOfYear = DateTime(date.year, 1, 1);
+    // Calculate the difference in days, then divide by 7 and round up.
+    return ((date.difference(firstDayOfYear).inDays) / 7).ceil() + 1;
+  }
+
   Future<void> _loadTrackedHabits() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> habitsJson = prefs.getStringList('trackedHabits') ?? [];
+    DateTime now = DateTime.now();
+    int currentWeek = weekNumber(now);
+
     setState(() {
       _trackedHabits = habitsJson.map((str) {
         final habit = json.decode(str);
+        // Parse stored lastMarkedDate if available.
+        DateTime? storedLastMarked;
+        if (habit.containsKey("lastMarkedDate") &&
+            habit["lastMarkedDate"].toString().isNotEmpty) {
+          storedLastMarked = DateTime.tryParse(habit["lastMarkedDate"]);
+        }
+        // If not available, assume habit was last marked today.
+        storedLastMarked ??= now;
+        int storedWeek = weekNumber(storedLastMarked);
+
+        if (currentWeek != storedWeek) {
+          // New week: clear all marked days and reset the 'marked' flag.
+          habit["days"] = List<bool>.filled(7, false);
+          habit["marked"] = false;
+        } else if (!isSameDay(now, storedLastMarked)) {
+          // Same week but new day: reset today's 'marked' flag.
+          habit["marked"] = false;
+        }
+        // Only update lastMarkedDate when a user toggles marking (not here)
+        // Optionally, if you want to initialize it, do so if missing.
+        if (!habit.containsKey("lastMarkedDate") ||
+            habit["lastMarkedDate"].toString().isEmpty) {
+          habit["lastMarkedDate"] = now.toIso8601String();
+        }
+
         return {
           "name": habit["name"],
           "description": habit["description"],
@@ -189,14 +233,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
             habit["icon"],
             fontFamily: habit["fontFamily"],
             fontPackage: (habit["fontFamily"] == "FontAwesomeSolid" ||
-                          habit["fontFamily"] == "FontAwesomeBrands" ||
-                          habit["fontFamily"] == "FontAwesomeRegular")
-                        ? "font_awesome_flutter"
-                        : (habit["fontPackage"] == "" ? null : habit["fontPackage"]),
+                    habit["fontFamily"] == "FontAwesomeBrands" ||
+                    habit["fontFamily"] == "FontAwesomeRegular")
+                ? "font_awesome_flutter"
+                : (habit["fontPackage"] == "" ? null : habit["fontPackage"]),
           ),
           "color": Color(habit["color"]),
           "days": List<bool>.from(habit["days"]),
           "marked": habit["marked"] ?? false,
+          "lastMarkedDate": habit["lastMarkedDate"],
         };
       }).toList();
     });
@@ -768,6 +813,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           )
                         : Column(
                             children: _trackedHabits.map((habit) {
+                              final DateTime lastMarkedDate =
+                                DateTime.tryParse(habit["lastMarkedDate"] ?? "") ?? DateTime.now();
+                              bool markedToday =
+                                isSameDay(lastMarkedDate, DateTime.now()) ? (habit["marked"] ?? false) : false;
                               // Convert the stored color and icon values if needed.
                               final habitColor = habit["color"] is int
                                   ? Color(habit["color"])
@@ -844,19 +893,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                             ],
                                           ),
                                         ),
-
                                         // Right side: Check Icon & Three Dots
                                         Row(
                                           children: [
                                             IconButton(
                                               icon: Icon(
-                                                (habit["marked"] ?? false) ? Icons.check_circle : Icons.check_circle_outline,
-                                                color: (habit["marked"] ?? false) ? habitColor : Colors.white70,
+                                                markedToday ? Icons.check_circle : Icons.check_circle_outline,
+                                                color: markedToday ? habitColor : Colors.white70,
                                               ),
                                               onPressed: () {
                                                 setState(() {
-                                                  habit["marked"] = !(habit["marked"] ?? false);
+                                                  habit["marked"] = !markedToday;
                                                   habit["days"][currentDayIndex] = habit["marked"];
+                                                  habit["lastMarkedDate"] = DateTime.now().toIso8601String();
                                                 });
                                                 _saveTrackedHabits();
                                               },

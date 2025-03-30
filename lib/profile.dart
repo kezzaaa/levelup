@@ -10,6 +10,7 @@ import 'dart:io';
 import 'dart:math';
 
 // Files
+import 'userutils.dart';
 import 'login.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -20,10 +21,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String srcGlb = ''; // Placeholder 2D avatar URL
   String username = "@username"; // Placeholder username
   String fullName = "John Doe"; // Placeholder full name
   String profilePath = ""; // Path for the selected avatar image
   String joinDate = "Unknown"; // Default placeholder for join date
+  bool useAvatar = true;
 
   @override
   void initState() {
@@ -35,13 +38,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Load user details from SharedPreferences
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    final ProfileData? profile = build3DAvatarUrl(prefs);
     setState(() {
+      if (profile != null && profile.avatarUrl != null) {
+        srcGlb = profile.avatarUrl!;
+        debugPrint('✅ Avatar URL Loaded: $srcGlb');
+      } else {
+        debugPrint("❌ No avatar URL found in SharedPreferences");
+      }
       username = "@${prefs.getString('username') ?? 'username'}";
       fullName = prefs.getString('fullName') ?? "John Doe";
       profilePath = prefs.getString('profilePath') ?? "";
       joinDate = prefs.getString('joinDate') ?? "Unknown";
+      // Read the stored active choice. If not set, default to true.
+      useAvatar = prefs.getBool('useAvatar') ?? true;
     });
 
+    String avatar2DUrl = build2DAvatarUrl(srcGlb);
+    debugPrint("2D Avatar URL: $avatar2DUrl");
     debugPrint("📤 Loaded Profile Path: $profilePath");
     debugPrint("📆 Join Date: $joinDate");
   }
@@ -128,19 +142,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Profile Header Row
             Row(
               children: [
-                GestureDetector(
-                  onTap: () {},
-                  child: ClipOval(
-                    child: SizedBox(
-                      width: 80, // Ensure the same width in both screens
-                      height: 80, // Ensure the same height in both screens
-                      child: Image(
-                        image: (profilePath.isNotEmpty && File(profilePath).existsSync())
-                            ? FileImage(File(profilePath)) as ImageProvider
-                            : const AssetImage('assets/images/defaultpicture.png'),
-                        fit: BoxFit.cover, // ✅ Ensure proper scaling
-                      ),
-                    ),
+                ClipOval(
+                  child: SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: useAvatar
+                        ? Transform.translate(
+                            offset: const Offset(2.5, 25), // Shift upward
+                            child: Transform.scale(
+                              scale: 2, // Zoom in the 2D avatar
+                              child: Image(
+                                image: srcGlb.isNotEmpty
+                                    ? NetworkImage(build2DAvatarUrl(srcGlb))
+                                    : const AssetImage('assets/images/defaultpicture.png'),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                        : (profilePath.isNotEmpty && File(profilePath).existsSync())
+                            ? Image.file(
+                                File(profilePath),
+                                fit: BoxFit.cover,
+                              )
+                            : const Image(
+                                image: AssetImage('assets/images/defaultpicture.png'),
+                                fit: BoxFit.cover,
+                              ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -356,6 +383,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String username = "";
   String profilePath = "";
   final ImagePicker _picker = ImagePicker();
+  String srcGlb = "";
+  bool _useAvatar = true;
 
   @override
   void initState() {
@@ -365,7 +394,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
+    final ProfileData? profile = build3DAvatarUrl(prefs);
     setState(() {
+      if (profile != null && profile.avatarUrl != null) {
+        srcGlb = profile.avatarUrl!;
+        debugPrint('✅ Avatar URL Loaded: $srcGlb');
+      } else {
+        debugPrint("❌ No avatar URL found in SharedPreferences");
+      }
       _firstNameController.text = prefs.getString('firstName') ?? "";
       _lastNameController.text = prefs.getString('lastName') ?? "";
       _selectedGender = prefs.getString('gender') ?? "";
@@ -392,6 +428,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     await prefs.setString('location', _selectedCountry ?? "");
     await prefs.setString('email', _emailController.text);
     await prefs.setString('phone', _phoneController.text);
+
+    // Save which image is active:
+    await prefs.setBool('useAvatar', _useAvatar);
 
     if (mounted) {
       Navigator.pop(context, true);
@@ -426,6 +465,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  String getLocalPath(String path) {
+    return Uri.parse(path).toFilePath();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -444,49 +487,136 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Profile Picture
-              Stack(
-                alignment: Alignment.center, // Ensures the elements stay properly aligned
+              // Profile Picture + Toggle Stack
+              Column(
                 children: [
-                  // Profile Picture
-                  GestureDetector(
-                    onTap: _pickImage, // ✅ Opens gallery
-                    child: ClipOval(
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: (profilePath.isNotEmpty && File(profilePath).existsSync())
-                                ? FileImage(File(profilePath)) as ImageProvider
-                                : const AssetImage('assets/images/defaultpicture.png'),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
+                  const Text(
+                    "Select Active Profile Picture",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-
-                  // Non-Clickable Edit Icon (Positioned at Bottom Right)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Color(0xFF1C1C1C), // ✅ Semi-transparent background
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // "Your Avatar" Option (2D Avatar)
+                      Column(
+                        children: [
+                          const Text(
+                            "Your Avatar:",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () {
+                              // Set this option as active
+                              setState(() {
+                                _useAvatar = true;
+                              });
+                            },
+                            child: Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                // Highlight with a white border if _useAvatar is true
+                                border: _useAvatar
+                                    ? Border.all(color: Colors.white, width: 2)
+                                    : null,
+                              ),
+                              child: ClipOval(
+                                child: SizedBox(
+                                  width: 80,
+                                  height: 80,
+                                  child: Transform.translate(
+                                    offset: const Offset(2.5, 25), // Shift upward
+                                    child: Transform.scale(
+                                      scale: 2, // Zoom in
+                                      child: Image(
+                                        image: srcGlb.isNotEmpty
+                                            ? NetworkImage(build2DAvatarUrl(srcGlb))
+                                            : const AssetImage('assets/images/defaultpicture.png'),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      padding: const EdgeInsets.all(4),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 18, // ✅ Small icon size
-                      ),
-                    ),
+                      const SizedBox(width: 20),
+                      // "Custom Image" Option (Uploaded image)
+                      Column(
+                        children: [
+                          const Text(
+                            "Custom Image:",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(height: 8),
+                          GestureDetector(
+                            onTap: () {
+                              // Tapping the custom image sets it as active (highlighted)
+                              setState(() {
+                                _useAvatar = false;
+                              });
+                            },
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    // Highlight if _useAvatar is false
+                                    border: !_useAvatar
+                                        ? Border.all(color: Colors.white, width: 2)
+                                        : null,
+                                  ),
+                                  child: ClipOval(
+                                    child: (profilePath.isNotEmpty &&
+                                            File(getLocalPath(profilePath)).existsSync())
+                                        ? Image.file(
+                                            File(getLocalPath(profilePath)),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : const Image(
+                                            image: AssetImage('assets/images/defaultpicture.png'),
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                ),
+                                // Positioned edit icon; tapping opens image picker
+                                Positioned(
+                                  bottom: -5,
+                                  right: -5,
+                                  child: Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: const BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Color(0xFF212121), // Grey circle background
+                                    ),
+                                    child: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      icon: const Icon(Icons.edit, color: Colors.white, size: 18),
+                                      onPressed: () {
+                                        // Open image picker
+                                        _pickImage();
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
                   ),
                 ],
               ),
+
               const SizedBox(height: 16), // Reduced spacing
 
               // Input Fields
@@ -494,6 +624,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildTextField("Last Name", _lastNameController),
               _buildTextField("Username", TextEditingController(text: username), isEditable: false),
               const SizedBox(height: 10),
+
               // Gender Dropdown
               SizedBox(
                 height: 75, // Reduced height
@@ -507,7 +638,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     return DropdownMenuItem(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (value) => setState(() => _selectedGender = value),
-                  dropdownColor:const Color(0xFF141414),
+                  dropdownColor: const Color(0xFF141414),
                   decoration: const InputDecoration(labelText: "Gender"),
                 ),
               ),
@@ -536,11 +667,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     "Select Country",
                     style: TextStyle(color: Colors.grey[700]),
                   ),
-                  items: ['🦅 USA', '🍁 Canada', '☕ UK', '🐊 Australia'].map((String value) {
+                  items: ['🇺🇸 USA', '🇨🇦 Canada', '🇬🇧 UK', '🇦🇺 Australia'].map((String value) {
                     return DropdownMenuItem(value: value, child: Text(value));
                   }).toList(),
                   onChanged: (value) => setState(() => _selectedCountry = value),
-                  dropdownColor:const Color(0xFF141414),
+                  dropdownColor: const Color(0xFF141414),
                   decoration: const InputDecoration(labelText: "Country"),
                 ),
               ),
@@ -641,8 +772,18 @@ class SwipeableQuestionStack extends StatefulWidget {
 
 class _SwipeableQuestionStackState extends State<SwipeableQuestionStack> {
   final List<Question> _allQuestions = [
-    Question(text: "Are you vegetarian?", tag: "vegetarian"),
-  ];
+  Question(text: "Are you vegetarian?", tag: "vegetarian"),
+  Question(text: "Are you a morning person?", tag: "morning_person"),
+  Question(text: "Do you prefer a minimalist lifestyle?", tag: "minimalist"),
+  Question(text: "Do you enjoy spending time outdoors?", tag: "outdoors"),
+  Question(text: "Are you more of a homebody?", tag: "homebody"),
+  Question(text: "Do you prefer quiet evenings over loud parties?", tag: "quiet_evenings"),
+  Question(text: "Are you environmentally conscious?", tag: "environmentally_conscious"),
+  Question(text: "Do you enjoy exploring new cuisines?", tag: "exploring_cuisines"),
+  Question(text: "Do you prefer urban living over suburban or rural life?", tag: "urban_living"),
+  Question(text: "Do you enjoy creative hobbies (like painting, writing, etc.)?", tag: "creative_hobbies"),
+  Question(text: "Are you a fan of reading and literature?", tag: "reading"),
+];
 
   List<Question> _questions = [];
   Set<String> savedTags = {};
