@@ -1,11 +1,14 @@
 // ignore_for_file: library_private_types_in_public_api, use_super_parameters
 
-import 'dart:typed_data';
-
+// Packages
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+// Files
+import 'main.dart';
 
 // Dummy 2D avatar conversion function.
 // In your actual app, this might transform a 3D URL into a 2D avatar URL.
@@ -402,254 +405,299 @@ class _SocialScreenState extends State<SocialScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Social Tab"),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(left: 0),
-            child: IconButton(
-              icon: const Icon(Icons.person),
-              onPressed: () {
-                // Handle profile icon tap (e.g., navigate to profile screen)
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 0),
-            child: IconButton(
-              icon: const Icon(Icons.chat),
-              onPressed: () {
-                // Handle chat icon tap (e.g., navigate to chat screen)
-              },
-            ),
-          ),
-          // Email icon with notification badge
-          Padding(
-            padding: const EdgeInsets.only(left: 0),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.email),
+    return Stack(
+      children: [
+        // Your Scaffold now becomes the bottom layer of the stack.
+        Scaffold(
+          appBar: AppBar(
+            title: const Text("Social Tab"),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(left: 0),
+                child: IconButton(
+                  icon: const Icon(Icons.person),
                   onPressed: () {
-                    // Handle email icon tap (e.g., navigate to email/inbox screen)
+                    // Handle profile icon tap
                   },
                 ),
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: const EdgeInsets.all(1),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "1",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              icon: const Icon(Icons.leaderboard),
-              onPressed: () {
-                // Handle leaderboard/podium icon tap (e.g., navigate to leaderboard screen)
-              },
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Friends section header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Friends (${_friends.length})",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Horizontal friend list
-          SizedBox(
-            height: 120,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _friends.length,
-                itemBuilder: (context, index) {
-                  final friend = _friends[index];
-                  return _buildFriendTile(friend);
-                },
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Search bar with smaller height and extra top padding plus a settings icon to the right
-          Padding(
-            padding: const EdgeInsets.only(left: 16.0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "User Lookup",
-                textAlign: TextAlign.left,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.only(left: 0),
+                child: IconButton(
+                  icon: const Icon(Icons.chat),
+                  onPressed: () {
+                    // Handle chat icon tap
+                  },
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: "Search users...",
-                        prefixIcon: const Icon(Icons.search),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
+              // Email icon with notification badge
+              Padding(
+                padding: const EdgeInsets.only(left: 0),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.email),
+                      onPressed: () {
+                        // Handle email icon tap
+                      },
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1C1C1C),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.tune, color: Colors.white),
-                    onPressed: _showSearchSettingsDialog,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // List of user profile tiles with dark grey background
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filteredUsers.length,
-              itemBuilder: (context, index) {
-                final user = _filteredUsers[index];
-                final avatarUrl = build2DAvatarUrl(user['avatarUrl']!);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1C),
-                      borderRadius: BorderRadius.circular(12),
-                      // Slight shadow to make the tile pop
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.4),
-                          offset: const Offset(0, 3),
-                          blurRadius: 4,
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(1),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ],
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 30,
-                        backgroundImage: NetworkImage(avatarUrl),
-                        backgroundColor: Colors.transparent,
-                      ),
-                      // Show name and age together: e.g. "Alice, 24"
-                      title: Text(
-                        "${user['firstName']!}, ${user['age']}",
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      subtitle: Text(
-                        user['username']!,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Cyan circle with user's level
-                          Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: Colors.cyan,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "1",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
                             ),
-                            child: Center(
-                              child: Text(
-                                user['level']!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: IconButton(
+                  icon: const Icon(Icons.leaderboard),
+                  onPressed: () {
+                    // Handle leaderboard icon tap
+                  },
+                ),
+              ),
+            ],
+          ),
+          body: Column(
+            children: [
+              // Friends section header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Friends (${_friends.length})",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Horizontal friend list
+              SizedBox(
+                height: 120,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _friends.length,
+                    itemBuilder: (context, index) {
+                      final friend = _friends[index];
+                      return _buildFriendTile(friend);
+                    },
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Search bar with settings icon
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "User Lookup",
+                    textAlign: TextAlign.left,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 40,
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: "Search users...",
+                            prefixIcon: const Icon(Icons.search),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 0, horizontal: 8),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      height: 40,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1C1C),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.tune, color: Colors.white),
+                        onPressed: _showSearchSettingsDialog,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // List of user profile tiles
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _filteredUsers.length,
+                  itemBuilder: (context, index) {
+                    final user = _filteredUsers[index];
+                    final avatarUrl = build2DAvatarUrl(user['avatarUrl']!);
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C1C1C),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.4),
+                              offset: const Offset(0, 3),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            radius: 30,
+                            backgroundImage: NetworkImage(avatarUrl),
+                            backgroundColor: Colors.transparent,
+                          ),
+                          title: Text(
+                            "${user['firstName']!}, ${user['age']}",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            user['username']!,
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 12),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: Colors.cyan,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.white, width: 2),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    user['level']!,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Text(
+                                user['country']!,
+                                style: const TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                platformIcons[user['platform']!] ??
+                                    FontAwesomeIcons.question,
+                                size: 16,
+                                color: Colors.white70,
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          // Country flag (displayed as text)
+                          onTap: () => _openProfileDetail(user),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Blur overlay covering the entire screen (app bar and body)
+        ValueListenableBuilder<bool>(
+          valueListenable: blurEnabledNotifier,
+          builder: (context, isBlurEnabled, child) {
+            if (!isBlurEnabled) {
+              return const SizedBox.shrink();
+            }
+            return Positioned.fill(
+              child: AbsorbPointer(
+                absorbing: true,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.2),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
                           Text(
-                            user['country']!,
-                            style: const TextStyle(fontSize: 20),
+                            "🔒",
+                            style: TextStyle(fontSize: 64),
                           ),
-                          const SizedBox(width: 8),
-                          // Platform icon from FontAwesome
-                          Icon(
-                            platformIcons[user['platform']!] ?? FontAwesomeIcons.question,
-                            size: 16,
-                            color: Colors.white70,
+                          SizedBox(height: 16),
+                          Text(
+                            "Social features disabled.\nWant to unlock it? Change it in the settings.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
-                      onTap: () => _openProfileDetail(user), // Navigate to profile detail
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

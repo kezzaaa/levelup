@@ -10,6 +10,11 @@ import 'signupprocess.dart';
 import 'userutils.dart';
 // import 'progress.dart';
 
+final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
+
+/// When true, the SocialScreen blur overlay is shown (social features disabled).
+ValueNotifier<bool> blurEnabledNotifier = ValueNotifier<bool>(true);
+
 void main() async {
   // Ensure Flutter is initialized before fetching SharedPreferences
   WidgetsFlutterBinding.ensureInitialized(); 
@@ -28,6 +33,9 @@ void main() async {
   // Reset active missions
   // await prefs.remove('completedMissions');
   // await prefs.remove('activeSystemMissions');
+  // await prefs.remove('dailyResetTime');
+  // await prefs.remove('weeklyResetTime');
+  // await prefs.remove('monthlyResetTime');
 
   // Remove focus areas
   // await prefs.remove('userFocuses');
@@ -47,7 +55,7 @@ void main() async {
   
   // Clear tracked addicitions and habits
   // await prefs.remove('trackedAddictions');
-  await prefs.remove('trackedHabits');
+  // await prefs.remove('trackedHabits');
 
   // Create and print user on start
   String? userId = await createGuestUser();
@@ -64,11 +72,11 @@ class MyApp extends StatelessWidget {
   final bool hasSeenIntro;
 
   const MyApp({super.key, required this.hasSeenIntro});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'LevelUp',
+      navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
       theme: ThemeData().copyWith(
         colorScheme: ColorScheme.dark(

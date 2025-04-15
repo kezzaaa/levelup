@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:levelup/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Files
@@ -34,7 +35,7 @@ class MissionsScreen extends StatefulWidget {
   _MissionsScreenState createState() => _MissionsScreenState();
 }
 
-class _MissionsScreenState extends State<MissionsScreen> {
+class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObserver, RouteAware {
   List<Map<String, dynamic>> _allMissions = [];
   final List<Map<String, dynamic>> _systemMissions = [];
   final List<Map<String, dynamic>> _userMissions = [];
@@ -48,13 +49,13 @@ class _MissionsScreenState extends State<MissionsScreen> {
   String _systemFilter = '';
   int _refreshTokens = 3;
 
-  
-
   late Timer _countdownTimer;
 
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     _checkFirstTimeUser();
 
@@ -64,22 +65,22 @@ class _MissionsScreenState extends State<MissionsScreen> {
         final now = DateTime.now().millisecondsSinceEpoch;
 
         if (now >= _dailyResetTime) {
-            debugPrint("🔄 Daily Missions Reset Triggered");
-            _resetMissions('daily');
-            _dailyResetTime = now + Duration(days: 1).inMilliseconds; // Reset for next day
-            await _loadMissionTimers(); // Save the new reset time
+          debugPrint("🔄 Daily Missions Reset Triggered");
+          _resetMissions('daily');
+          _dailyResetTime = _getNextResetTime('daily');
+          await _loadMissionTimers();
         }
         if (now >= _weeklyResetTime) {
-            debugPrint("🔄 Weekly Missions Reset Triggered");
-            _resetMissions('weekly');
-            _weeklyResetTime = now + Duration(days: 7).inMilliseconds; // Reset for next week
-            await _loadMissionTimers();
+          debugPrint("🔄 Weekly Missions Reset Triggered");
+          _resetMissions('weekly');
+          _weeklyResetTime = _getNextResetTime('weekly');
+          await _loadMissionTimers();
         }
         if (now >= _monthlyResetTime) {
-            debugPrint("🔄 Monthly Missions Reset Triggered");
-            _resetMissions('monthly');
-            _monthlyResetTime = now + Duration(days: DateTime(now).month == 2 ? 28 : 30).inMilliseconds; // Auto-detect month length
-            await _loadMissionTimers();
+          debugPrint("🔄 Monthly Missions Reset Triggered");
+          _resetMissions('monthly');
+          _monthlyResetTime = _getNextResetTime('monthly');
+          await _loadMissionTimers();
         }
 
         setState(() {}); // Update countdown every second
@@ -109,10 +110,61 @@ class _MissionsScreenState extends State<MissionsScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAndResetMissions();
+    }
+  }
+
+  @override
+  void didPopNext() {
+    _checkAndResetMissions();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    routeObserver.unsubscribe(this);
     _saveActiveMissions();
     _countdownTimer.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkAndResetMissions() async {
+    final now = DateTime.now();
+    final newDailyResetTime = _getNextResetTime('daily');
+    final newWeeklyResetTime = _getNextResetTime('weekly');
+    final newMonthlyResetTime = _getNextResetTime('monthly');
+
+    final prefs = await SharedPreferences.getInstance();
+
+    if (now.millisecondsSinceEpoch >= newDailyResetTime) {
+      debugPrint("🔄 Daily Missions Reset Triggered on resume");
+      _resetMissions('daily');
+      await prefs.setInt('dailyResetTime', newDailyResetTime);
+    }
+    if (now.millisecondsSinceEpoch >= newWeeklyResetTime) {
+      debugPrint("🔄 Weekly Missions Reset Triggered on resume");
+      _resetMissions('weekly');
+      await prefs.setInt('weeklyResetTime', newWeeklyResetTime);
+    }
+    if (now.millisecondsSinceEpoch >= newMonthlyResetTime) {
+      debugPrint("🔄 Monthly Missions Reset Triggered on resume");
+      _resetMissions('monthly');
+      await prefs.setInt('monthlyResetTime', newMonthlyResetTime);
+    }
+
+    setState(() {
+      _dailyResetTime = newDailyResetTime;
+      _weeklyResetTime = newWeeklyResetTime;
+      _monthlyResetTime = newMonthlyResetTime;
+    });
   }
 
   // ✅ Function to check if user has seen mission tutorial before
@@ -290,16 +342,18 @@ class _MissionsScreenState extends State<MissionsScreen> {
     _weeklyResetTime = prefs.getInt('weeklyResetTime') ?? _getNextResetTime('weekly');
     _monthlyResetTime = prefs.getInt('monthlyResetTime') ?? _getNextResetTime('monthly');
 
+    debugPrint("Loaded reset times: now=$now, daily=$_dailyResetTime, weekly=$_weeklyResetTime, monthly=$_monthlyResetTime");
+
     if (now >= _dailyResetTime) {
-      debugPrint("🔄 Daily Missions Reset Triggered");
+      debugPrint("🔄 Daily Missions Reset Triggered in _loadMissionTimers");
       _resetMissions('daily');
     }
     if (now >= _weeklyResetTime) {
-      debugPrint("🔄 Weekly Missions Reset Triggered");
+      debugPrint("🔄 Weekly Missions Reset Triggered in _loadMissionTimers");
       _resetMissions('weekly');
     }
     if (now >= _monthlyResetTime) {
-      debugPrint("🔄 Monthly Missions Reset Triggered");
+      debugPrint("🔄 Monthly Missions Reset Triggered in _loadMissionTimers");
       _resetMissions('monthly');
     }
   }

@@ -2,6 +2,7 @@
 // ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, use_super_parameters
 
 // Packages
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,7 @@ import 'dart:io';
 import 'dart:math';
 
 // Files
+import 'main.dart';
 import 'userutils.dart';
 import 'login.dart';
 
@@ -968,8 +970,44 @@ class _SwipeableQuestionStackState extends State<SwipeableQuestionStack> {
   }
 }
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  // Local variable representing the toggle status.
+  // When true, social features are enabled and the blur is off.
+  bool _socialEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadToggleValue();
+  }
+
+  // Load the saved toggle value from SharedPreferences.
+  Future<void> _loadToggleValue() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool storedValue = prefs.getBool('socialEnabled') ?? false;
+    setState(() {
+      _socialEnabled = storedValue;
+      // When social features are enabled, disable the blur (thus setting global to false).
+      blurEnabledNotifier.value = !storedValue;
+    });
+  }
+
+  // Toggle the switch and persist the new value.
+  Future<void> _toggleSocialEnabled(bool value) async {
+    setState(() {
+      _socialEnabled = value;
+      blurEnabledNotifier.value = !value;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('socialEnabled', value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -983,10 +1021,21 @@ class SettingsScreen extends StatelessWidget {
           },
         ),
       ),
-      body: const Center(
-        child: Text(
-          "Settings Page",
-          style: TextStyle(fontSize: 18, color: Colors.white),
+      // Use Padding to position the toggle near the top.
+      body: Padding(
+        padding: const EdgeInsets.only(top: 20.0, left: 16.0),
+        child: Row(
+          children: [
+            const Text(
+              "Enable Social Features",
+              style: TextStyle(fontSize: 18, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            CupertinoSwitch(
+              value: _socialEnabled,
+              onChanged: _toggleSocialEnabled,
+            ),
+          ],
         ),
       ),
     );

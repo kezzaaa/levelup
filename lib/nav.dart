@@ -22,12 +22,14 @@ class Navigation extends StatefulWidget {
 
 class _NavigationState extends State<Navigation> {
   late int _selectedIndex;
+  late int _previousIndex;
   String _name = "";
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.newIndex;
+    _previousIndex = _selectedIndex;
     _loadName();
   }
 
@@ -47,24 +49,13 @@ class _NavigationState extends State<Navigation> {
 
   void _onItemTapped(int index) {
     if (index == _selectedIndex) return;
-
-    Navigator.of(context).pushReplacement(_createRoute(index));
-  }
-
-  PageRouteBuilder _createRoute(int index) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) =>
-          Navigation(newIndex: index),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final begin = Offset(index > _selectedIndex ? 1.0 : -1.0, 0.0);
-        final end = Offset.zero;
-        final tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: Curves.easeInOut));
-        final offsetAnimation = animation.drive(tween);
-
-        return SlideTransition(position: offsetAnimation, child: child);
-      },
-    );
+    setState(() {
+      _previousIndex = _selectedIndex;
+      _selectedIndex = index;
+    });
+    if (index == 4) {
+      progressKey.currentState?.refreshHabits();
+    }
   }
 
   @override
@@ -74,18 +65,38 @@ class _NavigationState extends State<Navigation> {
       SocialScreen(),
       HomeScreen(name: _name, shouldReload: false, isEditing: false),
       MissionsScreen(),
-      ProgressScreen(),
+      ProgressScreen(key: progressKey),
     ];
 
     return Scaffold(
-      body: pages[_selectedIndex], // ✅ Ensure the correct tab is displayed
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        transitionBuilder: (child, animation) {
+          // Determine slide direction based on index difference.
+          final bool slideFromRight = _selectedIndex > _previousIndex;
+          final Offset beginOffset =
+              slideFromRight ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0);
+          return SlideTransition(
+            position: animation.drive(
+              Tween<Offset>(begin: beginOffset, end: Offset.zero)
+                  .chain(CurveTween(curve: Curves.easeInOut)),
+            ),
+            child: child,
+          );
+        },
+        child: Container(
+          // Key the container with the selected index so AnimatedSwitcher knows when to animate.
+          key: ValueKey<int>(_selectedIndex),
+          child: pages[_selectedIndex],
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        backgroundColor: Theme.of(context).colorScheme.secondary,
+        backgroundColor: Color(0xFF1C1C1C),
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.grey,
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Social'),

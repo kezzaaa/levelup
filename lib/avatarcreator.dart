@@ -74,7 +74,6 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
   @override
   void initState() {
     super.initState();
-
     // ✅ Show overlay for 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -83,7 +82,6 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
         });
       }
     });
-
     // ✅ Initialize WebViewController
     _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)

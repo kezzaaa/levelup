@@ -11,6 +11,9 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 // Files
 import 'focusareas.dart';
+import 'achievements.dart';
+
+final GlobalKey<_ProgressScreenState> progressKey = GlobalKey<_ProgressScreenState>();
 
 Future<void> resetAllSkillBars() async {
   final prefs = await SharedPreferences.getInstance();
@@ -23,6 +26,26 @@ Future<void> resetAllSkillBars() async {
   }
 }
 
+/// Returns a map with keys 'year' and 'week' corresponding to the ISO week
+Map<String, int> getIsoWeekInfo(DateTime date) {
+  // Adjust the date to the Thursday of the current week.
+  // (ISO weeks start on Monday and the week is numbered according to Thursday.)
+  int weekday = date.weekday; // Monday=1 ... Sunday=7
+  DateTime thursday = date.add(Duration(days: (4 - weekday)));
+  int isoYear = thursday.year;
+  
+  // Find the first Thursday of the ISO year.
+  DateTime firstThursday = DateTime(isoYear, 1, 1);
+  while (firstThursday.weekday != DateTime.thursday) {
+    firstThursday = firstThursday.add(const Duration(days: 1));
+  }
+  
+  // Compute the week number.
+  int weekNumber = ((thursday.difference(firstThursday).inDays) / 7).floor() + 1;
+  
+  return {'year': isoYear, 'week': weekNumber};
+}
+
 // Progress Screen
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -31,7 +54,7 @@ class ProgressScreen extends StatefulWidget {
   _ProgressScreenState createState() => _ProgressScreenState();
 }
 
-class _ProgressScreenState extends State<ProgressScreen> {
+class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObserver {
   List<String> _focusAreas = [];
   final Map<String, int> _focusSkillPercents = {};
   List<Map<String, dynamic>> _trackedHabits = [];
@@ -60,6 +83,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkFirstTimeUser();
     _loadFocusAreas();
     _loadTrackedHabits();
@@ -74,7 +98,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   void dispose() {
     _addictionTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App resumed from background. Trigger your habit reset logic.
+      debugPrint("App resumed - checking if week changed...");
+      _loadTrackedHabits(); // or _resetHabitsIfNewWeek() if that's more appropriate
+    }
   }
 
   // ✅ Function to check if user has seen progress tutorial before
@@ -112,7 +146,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 const Text(
                   "Edit your life focuses and see their current level 💫\n"
                   "Earn and see your achievements by clicking the medal icon 🏅\n"
-                  "Set habits and mark them off daily 📑\n"
+                  "Set habits and mark them off option daily 📑\n"
                   "Wanting to quit something? Use the addiction tracker! ❌\n",
                   textAlign: TextAlign.center,
                 ),
@@ -165,14 +199,22 @@ class _ProgressScreenState extends State<ProgressScreen> {
       return json.encode({
         "name": habit["name"],
         "description": habit["description"],
-        "icon": habit["icon"],
-        "fontFamily": habit["fontFamily"],
-        "fontPackage": habit["fontPackage"],
-        "color": habit["color"],
+        "iconCode": (habit["icon"] is IconData)
+            ? (habit["icon"] as IconData).codePoint
+            : habit["icon"],
+        "fontFamily": (habit["icon"] is IconData)
+            ? (habit["icon"] as IconData).fontFamily
+            : habit["fontFamily"],
+        "fontPackage": (habit["icon"] is IconData)
+            ? (habit["icon"] as IconData).fontPackage
+            : habit["fontPackage"],
+        "color": (habit["color"] is Color)
+            ? (habit["color"] as Color).value
+            : habit["color"],
         "days": habit["days"],
         "marked": habit["marked"],
-        // Save the last marked date as an ISO string:
         "lastMarkedDate": habit["lastMarkedDate"] ?? DateTime.now().toIso8601String(),
+        "completedDates": habit["completedDates"] ?? [],
       });
     }).toList();
     await prefs.setStringList('trackedHabits', habitsJson);
@@ -181,6 +223,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // Helper function: checks if two dates are on the same day
   bool isSameDay(DateTime d1, DateTime d2) {
     return d1.year == d2.year && d1.month == d2.month && d1.day == d2.day;
+  }
+
+  bool isSameWeek(DateTime d1, DateTime d2) {
+    DateTime startOfWeek(DateTime d) => d.subtract(Duration(days: d.weekday - 1));
+    
+    final monday1 = startOfWeek(d1);
+    final monday2 = startOfWeek(d2);
+    
+    return (monday1.year == monday2.year) &&
+          (monday1.month == monday2.month) &&
+          (monday1.day == monday2.day);
   }
 
   // Helper function to compute a simple week number for a given date.
@@ -192,59 +245,76 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return ((date.difference(firstDayOfYear).inDays) / 7).ceil() + 1;
   }
 
+  // Public wrapper to refresh habits
+  Future<void> refreshHabits() async {
+    await _loadTrackedHabits();
+  }
+
+  DateTime startOfWeek(DateTime date) {
+    DateTime weekStart = DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
+    debugPrint("startOfWeek for date $date is $weekStart");
+    return weekStart;
+  }
+
   Future<void> _loadTrackedHabits() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> habitsJson = prefs.getStringList('trackedHabits') ?? [];
     DateTime now = DateTime.now();
-    int currentWeek = weekNumber(now);
+    DateTime currentWeekStart = startOfWeek(now);
+    debugPrint("Current date is $now and the current week starts on $currentWeekStart");
 
     setState(() {
       _trackedHabits = habitsJson.map((str) {
         final habit = json.decode(str);
-        // Parse stored lastMarkedDate if available.
-        DateTime? storedLastMarked;
-        if (habit.containsKey("lastMarkedDate") &&
-            habit["lastMarkedDate"].toString().isNotEmpty) {
-          storedLastMarked = DateTime.tryParse(habit["lastMarkedDate"]);
-        }
-        // If not available, assume habit was last marked today.
-        storedLastMarked ??= now;
-        int storedWeek = weekNumber(storedLastMarked);
 
-        if (currentWeek != storedWeek) {
-          // New week: clear all marked days and reset the 'marked' flag.
+        // Parse stored lastMarkedDate if available.
+        DateTime storedLastMarked = DateTime.tryParse(habit["lastMarkedDate"] ?? "") ?? now;
+        DateTime storedWeekStart = startOfWeek(storedLastMarked);
+
+        debugPrint("Habit '${habit["name"]}': storedLastMarked = $storedLastMarked, stored week starts = $storedWeekStart, current week starts = $currentWeekStart");
+
+        // If the stored habit's week is before the current week, reset it.
+        if (storedWeekStart.isBefore(currentWeekStart)) {
           habit["days"] = List<bool>.filled(7, false);
           habit["marked"] = false;
-        } else if (!isSameDay(now, storedLastMarked)) {
-          // Same week but new day: reset today's 'marked' flag.
+          habit["lastMarkedDate"] = now.toIso8601String();
+          debugPrint("Reset habit '${habit["name"]}' because its week is outdated.");
+        } else if (!isSameDay(storedLastMarked, now)) {
+          // Same week but not today: reset today's marked flag.
           habit["marked"] = false;
         }
-        // Only update lastMarkedDate when a user toggles marking (not here)
-        // Optionally, if you want to initialize it, do so if missing.
-        if (!habit.containsKey("lastMarkedDate") ||
-            habit["lastMarkedDate"].toString().isEmpty) {
+
+        // Ensure lastMarkedDate is set.
+        if (!habit.containsKey("lastMarkedDate") || habit["lastMarkedDate"].toString().isEmpty) {
           habit["lastMarkedDate"] = now.toIso8601String();
         }
+
+        // Reconstruct icon data.
+        final int iconCode = habit["iconCode"];
+        final String fontFamily = habit["fontFamily"];
+        final String fontPackage = habit["fontPackage"];
+        final IconData iconData = IconData(
+          iconCode,
+          fontFamily: fontFamily,
+          fontPackage: fontPackage.isEmpty ? null : fontPackage,
+        );
 
         return {
           "name": habit["name"],
           "description": habit["description"],
-          "icon": IconData(
-            habit["icon"],
-            fontFamily: habit["fontFamily"],
-            fontPackage: (habit["fontFamily"] == "FontAwesomeSolid" ||
-                    habit["fontFamily"] == "FontAwesomeBrands" ||
-                    habit["fontFamily"] == "FontAwesomeRegular")
-                ? "font_awesome_flutter"
-                : (habit["fontPackage"] == "" ? null : habit["fontPackage"]),
-          ),
+          "icon": iconData,
           "color": Color(habit["color"]),
           "days": List<bool>.from(habit["days"]),
           "marked": habit["marked"] ?? false,
           "lastMarkedDate": habit["lastMarkedDate"],
+          "completedDates": habit["completedDates"] != null
+            ? List<String>.from(habit["completedDates"])
+            : [],
         };
       }).toList();
     });
+    await _saveTrackedHabits();
   }
 
   final List<IconData> _iconChoices = [
@@ -404,6 +474,22 @@ class _ProgressScreenState extends State<ProgressScreen> {
               child: const Text("Add"),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showMonthlyCalendar(BuildContext context, Map<String, dynamic> habit, DateTime initialMonth) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          backgroundColor: const Color(0xFF1C1C1C), // match your dark theme if needed
+          child: CalendarMonthView(
+            habit: habit,
+            month: initialMonth,
+          ),
         );
       },
     );
@@ -628,6 +714,28 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return "";
   }
 
+  void _showAchievements(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          // Replace AchievementsScreen with your actual achievements screen.
+          // For example, if you have a list of achievements, pass them to the screen.
+          return AchievementsScreen();
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0, 1); // Start from the bottom
+          const end = Offset.zero;
+          const curve = Curves.easeOut;
+          final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          final offsetAnimation = animation.drive(tween);
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -638,7 +746,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             padding: const EdgeInsets.only(right: 0),
             child: IconButton(
               icon: const Icon(FontAwesomeIcons.medal, color: Colors.white),
-              onPressed: () => (),
+              onPressed: () => _showAchievements(context),
             ),
           ),
           Padding(
@@ -655,7 +763,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Focus Areas Section (unchanged)
+            // Focus Areas Section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -899,7 +1007,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                             IconButton(
                                               icon: Icon(
                                                 markedToday ? Icons.check_circle : Icons.check_circle_outline,
-                                                color: markedToday ? habitColor : Colors.white70,
+                                                color: markedToday ? habitColor : Colors.white70
                                               ),
                                               onPressed: () {
                                                 setState(() {
@@ -907,6 +1015,18 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                                   habit["days"][currentDayIndex] = habit["marked"];
                                                   habit["lastMarkedDate"] = DateTime.now().toIso8601String();
                                                 });
+                                                // When marking the day:
+                                                if (habit["marked"] == true) {
+                                                  String dateStr = DateTime.now().toIso8601String().substring(0, 10); // e.g., "2025-04-15"
+                                                  habit["completedDates"] ??= [];
+                                                  if (!habit["completedDates"].contains(dateStr)) {
+                                                    habit["completedDates"].add(dateStr);
+                                                  }
+                                                } else {
+                                                  // Optionally remove the date when unchecking.
+                                                  String dateStr = DateTime.now().toIso8601String().substring(0, 10);
+                                                  habit["completedDates"]?.remove(dateStr);
+                                                }
                                                 _saveTrackedHabits();
                                               },
                                             ),
@@ -978,6 +1098,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                           icon: const Icon(FontAwesomeIcons.expand,
                                               color: Colors.white),
                                           onPressed: () {
+                                            _showMonthlyCalendar(context, habit, DateTime.now());
                                             // Expand functionality (Placeholder).
                                           },
                                         ),
@@ -1209,6 +1330,184 @@ class SemiCircularGauge extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class CalendarMonthView extends StatefulWidget {
+  final Map<String, dynamic> habit;
+  final DateTime month;
+
+  const CalendarMonthView({
+    Key? key,
+    required this.habit,
+    required this.month,
+  }) : super(key: key);
+
+  @override
+  State<CalendarMonthView> createState() => _CalendarMonthViewState();
+}
+
+class _CalendarMonthViewState extends State<CalendarMonthView> {
+  late DateTime _currentMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentMonth = DateTime(widget.month.year, widget.month.month, 1);
+  }
+
+  void _prevMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+    });
+  }
+
+  void _nextMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+    });
+  }
+
+  // Dummy logic to determine if habit is completed on a given day.
+  // Modify this to match how you store/completed dates.
+  bool _isCompletedOn(DateTime day) {
+    List<String> completedDates = widget.habit["completedDates"] != null 
+        ? List<String>.from(widget.habit["completedDates"]) 
+        : [];
+    String dateStr = "${day.year.toString().padLeft(4, '0')}-"
+                    "${day.month.toString().padLeft(2, '0')}-"
+                    "${day.day.toString().padLeft(2, '0')}";
+    return completedDates.contains(dateStr);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final lastDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1)
+        .subtract(const Duration(days: 1));
+    final daysInMonth = lastDayOfMonth.day;
+    List<DateTime> monthDays = List.generate(daysInMonth, (index) {
+      return DateTime(_currentMonth.year, _currentMonth.month, index + 1);
+    });
+    // Determine number of leading empty boxes (assume week starts on Monday)
+    final firstWeekday = firstDayOfMonth.weekday; // Monday=1, Sunday=7
+    final leadingEmptyBoxes = firstWeekday - 1;
+    final totalSquares = leadingEmptyBoxes + monthDays.length;
+    final trailingEmptyBoxes = (7 - (totalSquares % 7)) % 7;
+    final totalGridCount = totalSquares + trailingEmptyBoxes;
+
+    return Padding(
+      padding: const EdgeInsets.all(32.0), 
+      child: SizedBox(
+        height: 400,
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Month navigation row.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left, color: Colors.white),
+                  onPressed: _prevMonth,
+                ),
+                Text(
+                  "${_monthName(_currentMonth.month)} ${_currentMonth.year}",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, color: Colors.white),
+                  onPressed: _nextMonth,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Days-of-week labels.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: const [
+                Text("Mon", style: TextStyle(color: Colors.white70)),
+                Text("Tue", style: TextStyle(color: Colors.white70)),
+                Text("Wed", style: TextStyle(color: Colors.white70)),
+                Text("Thu", style: TextStyle(color: Colors.white70)),
+                Text("Fri", style: TextStyle(color: Colors.white70)),
+                Text("Sat", style: TextStyle(color: Colors.white70)),
+                Text("Sun", style: TextStyle(color: Colors.white70)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Calendar grid.
+            Expanded(
+              child: GridView.builder(
+                itemCount: totalGridCount,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 4,
+                  mainAxisExtent: 40,
+                ),
+                itemBuilder: (context, index) {
+                  if (index < leadingEmptyBoxes || 
+                      index >= leadingEmptyBoxes + monthDays.length) {
+                    return const SizedBox.shrink();
+                  }
+                  final dayIndex = index - leadingEmptyBoxes;
+                  final dayDate = monthDays[dayIndex];
+                  final isCompleted = _isCompletedOn(dayDate);
+                  return GestureDetector(
+                    onTap: () {
+                      // Optional tap logic.
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isCompleted ? Colors.blue : Colors.grey[700],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Close button row.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Close",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
+    return months[month - 1];
   }
 }
 
