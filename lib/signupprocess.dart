@@ -232,7 +232,7 @@ class _NameQuestionScreenState extends State<NameQuestionScreen> {
   void _saveFullNameAndProceed() async {
     String firstName = _firstNameController.text.trim();
     String lastName = _lastNameController.text.trim();
-    String fullName = "$firstName $lastName"; // ✅ Combine first & last name
+    String fullName = "$firstName $lastName"; // Combine first & last name
 
     if (firstName.isNotEmpty && lastName.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
@@ -282,6 +282,9 @@ class _NameQuestionScreenState extends State<NameQuestionScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
+              ],
               onChanged: (_) => _validateInputs(),
             ),
             const SizedBox(height: 20),
@@ -295,6 +298,9 @@ class _NameQuestionScreenState extends State<NameQuestionScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
+              ],
               onChanged: (_) => _validateInputs(),
             ),
             const SizedBox(height: 20),
@@ -341,7 +347,7 @@ class _GenderQuestionScreenState extends State<GenderQuestionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -437,7 +443,7 @@ class _AgeQuestionScreenState extends State<AgeQuestionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -513,7 +519,7 @@ class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -532,11 +538,10 @@ class _LocationQuestionScreenState extends State<LocationQuestionScreen> {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 20),
-            // Use a DropdownButtonFormField instead
             Material(
               color: Colors.transparent, // Ensures no background interference
               child: Container(
-                width: MediaQuery.of(context).size.width * 0.8, // Control width here
+                width: MediaQuery.of(context).size.width * 0.8,
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
@@ -616,7 +621,7 @@ class _AddictionQuestionScreenState extends State<AddictionQuestionScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Back arrow
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -722,10 +727,10 @@ class _UsernamePasswordScreenState extends State<UsernamePasswordScreen> {
   }
 
   Future<void> _createAccount() async {
-    final username = _usernameController.text; // This won't include the "@" prefixText
+    final username = _usernameController.text;
     final password = _passwordController.text;
 
-    // New regular expression: Only letters and numbers.
+    // New regular expression: Only letters and numbers
     final usernamePattern = RegExp(r'^[A-Za-z0-9]+$');
     if (!usernamePattern.hasMatch(username)) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -3,12 +3,12 @@
 import 'package:flutter/material.dart';
 
 class AchievementsScreen extends StatelessWidget {
-  // Optionally, you can pass achievements data here.
+  // Pass achievements data here.
   final List<String>? achievements;
 
   const AchievementsScreen({Key? key, this.achievements}) : super(key: key);
 
-  // Generates a single hexagon slot with a question icon in the middle.
+  // Generates a single hexagon slot with a question icon in the middle
   Widget _buildHexagonSlot() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -18,10 +18,10 @@ class AchievementsScreen extends StatelessWidget {
           width: 80, // Hexagon size
           height: 85,
           decoration: BoxDecoration(
-            color: Colors.grey[700], // Dark grey placeholder
+            color: Colors.grey[700],
           ),
           child: const Center(
-            child: Icon(Icons.question_mark, color: Colors.white, size: 24), // Question icon instead of plus
+            child: Icon(Icons.question_mark, color: Colors.white, size: 24),
           ),
         ),
       ),

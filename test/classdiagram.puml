@@ -1,0 +1,694 @@
+@startuml
+set namespaceSeparator ::
+
+class "levelup::achievements.dart::AchievementsScreen" {
+  +List<String>? achievements
+  -Widget _buildHexagonSlot()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::achievements.dart::AchievementsScreen"
+
+class "levelup::achievements.dart::HexagonClipper" {
+  +Path getClip()
+  +bool shouldReclip()
+}
+
+"flutter::src::rendering::proxy_box.dart::CustomClipper" <|-- "levelup::achievements.dart::HexagonClipper"
+
+class "levelup::avatarcreator.dart::PreAvatarScreen" {
+  +_PreAvatarScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::avatarcreator.dart::PreAvatarScreen"
+
+class "levelup::avatarcreator.dart::_PreAvatarScreenState" {
+  +void initState()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::avatarcreator.dart::_PreAvatarScreenState"
+
+class "levelup::avatarcreator.dart::AvatarCreatorScreen" {
+  +SharedPreferences prefs
+  +bool isEditing
+  +_AvatarCreatorScreenState createState()
+}
+
+"levelup::avatarcreator.dart::AvatarCreatorScreen" o-- "shared_preferences::src::shared_preferences_legacy.dart::SharedPreferences"
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::avatarcreator.dart::AvatarCreatorScreen"
+
+class "levelup::avatarcreator.dart::_AvatarCreatorScreenState" {
+  -WebViewController _webViewController
+  -bool _showOverlay
+  +void initState()
+  -void _showAvatarCreatorTip()
+  +dynamic loadGuestSession()
+  +Widget build()
+}
+
+"levelup::avatarcreator.dart::_AvatarCreatorScreenState" o-- "webview_flutter::src::webview_controller.dart::WebViewController"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::avatarcreator.dart::_AvatarCreatorScreenState"
+
+class "levelup::completedmissions.dart::CompletedMissionsScreen" {
+  +List<Map<String, dynamic>> completedMissions
+  +_CompletedMissionsScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::completedmissions.dart::CompletedMissionsScreen"
+
+class "levelup::completedmissions.dart::_CompletedMissionsScreenState" {
+  +List<String> userFocuses
+  +Map<String, Color> focusColors
+  +void initState()
+  -dynamic _loadUserFocuses()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::completedmissions.dart::_CompletedMissionsScreenState"
+
+class "levelup::completedmissions.dart::FilteredMissionsScreen" {
+  +String skillName
+  +List<Map<String, dynamic>> completedMissions
+  +String normalize()
+  +String formatDate()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::completedmissions.dart::FilteredMissionsScreen"
+
+class "levelup::focusareas.dart::FocusAreaScreen" {
+  +bool isEditing
+  +_FocusAreaScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::focusareas.dart::FocusAreaScreen"
+
+class "levelup::focusareas.dart::_FocusAreaScreenState" {
+  -List<String> _selectedAreas
+  -String _searchQuery
+  -List<String> _availableAreas
+  +void initState()
+  -dynamic _loadUserFocus()
+  -dynamic _saveFocusAreas()
+  -PageRouteBuilder<dynamic> _createSlideTransitionBack()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::focusareas.dart::_FocusAreaScreenState"
+
+class "levelup::home.dart::HomeScreen" {
+  +String name
+  +bool shouldReload
+  +bool isEditing
+  +dynamic Function(int)? onXPUpdate
+  +_HomeScreenState createState()
+}
+
+"levelup::home.dart::HomeScreen" o-- "null::dynamic Function(int)"
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::home.dart::HomeScreen"
+
+class "levelup::home.dart::_HomeScreenState" {
+  +InAppWebViewController? webViewController
+  +String srcGlb
+  +bool isGaming
+  +bool isPaused
+  +int elapsedSeconds
+  +Timer? sessionTimer
+  -String? _gamingTimeLimit
+  +int heartsRemaining
+  -bool _hasLostHeartForCurrentSession
+  -int _level
+  -int _xp
+  +void initState()
+  +void dispose()
+  -dynamic _checkFirstTimeUser()
+  -dynamic _saveCurrentLevel()
+  +void openMissionsScreen()
+  -dynamic _loadName()
+  -dynamic _loadXPData()
+  -dynamic _loadHearts()
+  -dynamic _updateXP()
+  -dynamic _hasLevelledUp()
+  -void _showLevelUpDialog()
+  -dynamic _loadAvatar()
+  -String _getMimeType()
+  +void openAvatarEditor()
+  -dynamic _loadGamingSession()
+  -dynamic _showTimeLimitDialog()
+  -void _startTimer()
+  -dynamic _showTimeLimitExceededDialog()
+  +void toggleGamingSession()
+  +void stopGamingSession()
+  +dynamic showGamingHistory()
+  +int parseGamingTimeLimit()
+  +String formatTime()
+  -void _showHomeTutorial()
+  +Widget build()
+}
+
+"levelup::home.dart::_HomeScreenState" o-- "flutter_inappwebview::src::in_app_webview::in_app_webview_controller.dart::InAppWebViewController"
+"levelup::home.dart::_HomeScreenState" o-- "dart::async::Timer"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::home.dart::_HomeScreenState"
+
+class "levelup::login.dart::LoginScreen" {
+  +_LoginScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::login.dart::LoginScreen"
+
+class "levelup::login.dart::_LoginScreenState" {
+  -TextEditingController _usernameController
+  -TextEditingController _passwordController
+  -ValueNotifier<bool> _isButtonEnabled
+  -bool _isPasswordVisible
+  +void initState()
+  +void dispose()
+  -void _validateInputs()
+  -dynamic _login()
+  -void _showError()
+  +Widget build()
+}
+
+"levelup::login.dart::_LoginScreenState" o-- "flutter::src::widgets::editable_text.dart::TextEditingController"
+"levelup::login.dart::_LoginScreenState" o-- "flutter::src::foundation::change_notifier.dart::ValueNotifier<bool>"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::login.dart::_LoginScreenState"
+
+class "levelup::main.dart::MyApp" {
+  +bool hasSeenIntro
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::main.dart::MyApp"
+
+class "levelup::main.dart::Initialise" {
+  +bool hasSeenIntro
+  +_InitialiseState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::main.dart::Initialise"
+
+class "levelup::main.dart::_InitialiseState" {
+  -AnimationController _controller
+  -Animation<double> _scaleAnimation
+  +void initState()
+  +void dispose()
+  +Widget build()
+}
+
+"levelup::main.dart::_InitialiseState" o-- "flutter::src::animation::animation_controller.dart::AnimationController"
+"levelup::main.dart::_InitialiseState" o-- "flutter::src::animation::animation.dart::Animation<double>"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::main.dart::_InitialiseState"
+"flutter::src::widgets::ticker_provider.dart::SingleTickerProviderStateMixin" <|-- "levelup::main.dart::_InitialiseState"
+
+class "levelup::missions.dart::MissionsScreen" {
+  +_MissionsScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::missions.dart::MissionsScreen"
+
+class "levelup::missions.dart::_MissionsScreenState" {
+  -List<Map<String, dynamic>> _allMissions
+  -List<Map<String, dynamic>> _systemMissions
+  -List<Map<String, dynamic>> _userMissions
+  +List<Map<String, dynamic>> missionAchievements
+  -int _dailyResetTime
+  -int _weeklyResetTime
+  -int _monthlyResetTime
+  -String _userFilter
+  -String _systemFilter
+  -int _refreshTokens
+  -Timer _countdownTimer
+  +void initState()
+  +void didChangeDependencies()
+  +void didChangeAppLifecycleState()
+  +void didPopNext()
+  +void dispose()
+  -dynamic _checkAndResetMissions()
+  -dynamic _checkFirstTimeUser()
+  -dynamic _createMissions()
+  -int _generateUniqueId()
+  -dynamic _saveActiveMissions()
+  -dynamic _loadMissions()
+  -dynamic _loadMissionTimers()
+  -int _getNextResetTime()
+  -void _resetMissions()
+  -dynamic _loadRefreshTokens()
+  -dynamic _updateRefreshTokens()
+  -void _showMissionsTutorial()
+  -void _addMission()
+  -void _interactedWithMission()
+  +void completeMission()
+  +void updateMissionAchievements()
+  -dynamic _showRefreshConfirmation()
+  -void _deductRefreshToken()
+  -dynamic _setUserFilter()
+  -dynamic _setSystemFilter()
+  -Widget _buildFilterButton()
+  -Widget _buildMissionTimer()
+  -int _getRemainingTime()
+  -String _formatCountdown()
+  -void _showCompletedMissions()
+  -Widget _buildMissionTile()
+  +Widget build()
+}
+
+"levelup::missions.dart::_MissionsScreenState" o-- "dart::async::Timer"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::missions.dart::_MissionsScreenState"
+"flutter::src::widgets::binding.dart::WidgetsBindingObserver" <|-- "levelup::missions.dart::_MissionsScreenState"
+"flutter::src::widgets::routes.dart::RouteAware" <|-- "levelup::missions.dart::_MissionsScreenState"
+
+class "levelup::missions.dart::RoundedTrianglePainter" {
+  +Color fillColor
+  +Color borderColor
+  +double borderWidth
+  +double cornerRadius
+  +void paint()
+  +bool shouldRepaint()
+}
+
+"levelup::missions.dart::RoundedTrianglePainter" o-- "dart::ui::Color"
+"flutter::src::rendering::custom_paint.dart::CustomPainter" <|-- "levelup::missions.dart::RoundedTrianglePainter"
+
+class "levelup::missions.dart::SortOrder" {
+  +int index
+  {static} +List<SortOrder> values
+  {static} +SortOrder none
+  {static} +SortOrder asc
+  {static} +SortOrder desc
+}
+
+"levelup::missions.dart::SortOrder" o-- "levelup::missions.dart::SortOrder"
+"dart::core::Enum" <|-- "levelup::missions.dart::SortOrder"
+
+class "levelup::nav.dart::Navigation" {
+  +int newIndex
+  +_NavigationState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::nav.dart::Navigation"
+
+class "levelup::nav.dart::_NavigationState" {
+  -int _selectedIndex
+  -int _previousIndex
+  -String _name
+  +void initState()
+  -dynamic _loadName()
+  -void _onItemTapped()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::nav.dart::_NavigationState"
+
+class "levelup::profile.dart::ProfileScreen" {
+  +_ProfileScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::profile.dart::ProfileScreen"
+
+class "levelup::profile.dart::_ProfileScreenState" {
+  +String srcGlb
+  +String username
+  +String fullName
+  +String profilePath
+  +String joinDate
+  +bool useAvatar
+  +void initState()
+  -dynamic _loadUserData()
+  -void _resetMissions()
+  -dynamic _checkFirstTimeUser()
+  -void _showProfileTutorial()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::profile.dart::_ProfileScreenState"
+
+class "levelup::profile.dart::EditProfileScreen" {
+  +_EditProfileScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::profile.dart::EditProfileScreen"
+
+class "levelup::profile.dart::_EditProfileScreenState" {
+  -TextEditingController _firstNameController
+  -TextEditingController _lastNameController
+  -String? _selectedGender
+  -TextEditingController _selectedDateOfBirth
+  -String? _selectedCountry
+  -TextEditingController _emailController
+  -TextEditingController _phoneController
+  +String username
+  +String profilePath
+  -ImagePicker _picker
+  +String srcGlb
+  -bool _useAvatar
+  +void initState()
+  -dynamic _loadUserData()
+  -dynamic _saveProfile()
+  -dynamic _pickImage()
+  -dynamic _selectDate()
+  +String getLocalPath()
+  +Widget build()
+  -Widget _buildTextField()
+}
+
+"levelup::profile.dart::_EditProfileScreenState" o-- "flutter::src::widgets::editable_text.dart::TextEditingController"
+"levelup::profile.dart::_EditProfileScreenState" o-- "image_picker::image_picker.dart::ImagePicker"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::profile.dart::_EditProfileScreenState"
+
+class "levelup::profile.dart::HexagonClipper" {
+  +Path getClip()
+  +bool shouldReclip()
+}
+
+"flutter::src::rendering::proxy_box.dart::CustomClipper" <|-- "levelup::profile.dart::HexagonClipper"
+
+class "levelup::profile.dart::Question" {
+  +String text
+  +String tag
+}
+
+class "levelup::profile.dart::SwipeableQuestionStack" {
+  +void Function() onReset
+  +_SwipeableQuestionStackState createState()
+}
+
+"levelup::profile.dart::SwipeableQuestionStack" o-- "dart::ui::void Function()"
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::profile.dart::SwipeableQuestionStack"
+
+class "levelup::profile.dart::_SwipeableQuestionStackState" {
+  -List<Question> _allQuestions
+  -List<Question> _questions
+  +Set<String> savedTags
+  +Set<String> answeredTags
+  -bool _currentCardIsHearted
+  +void initState()
+  -dynamic _loadAnsweredQuestions()
+  -dynamic _markQuestionAsAnswered()
+  -dynamic _loadSavedTags()
+  -dynamic _saveTag()
+  -void _removeCurrentQuestion()
+  -void _toggleHeart()
+  +void resetMissions()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::profile.dart::_SwipeableQuestionStackState"
+
+class "levelup::profile.dart::SettingsScreen" {
+  +_SettingsScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::profile.dart::SettingsScreen"
+
+class "levelup::profile.dart::_SettingsScreenState" {
+  -bool _socialEnabled
+  +void initState()
+  -dynamic _loadToggleValue()
+  -dynamic _toggleSocialEnabled()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::profile.dart::_SettingsScreenState"
+
+class "levelup::progress.dart::ProgressScreen" {
+  +_ProgressScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::progress.dart::ProgressScreen"
+
+class "levelup::progress.dart::_ProgressScreenState" {
+  -List<String> _focusAreas
+  -Map<String, int> _focusSkillPercents
+  -List<Map<String, dynamic>> _trackedHabits
+  -List<Map<String, dynamic>> _trackedAddictions
+  -Timer? _addictionTimer
+  +Map<String, Color> focusColors
+  -List<IconData> _iconChoices
+  -List<String> _weekDays
+  +List<Map<String, dynamic>> addictionsList
+  +void initState()
+  +void dispose()
+  +void didChangeAppLifecycleState()
+  -dynamic _checkFirstTimeUser()
+  -void _showProgressTutorial()
+  -dynamic _loadFocusAreas()
+  +String extractEmoji()
+  +Map<String, int> calculateSkillLevelAndProgress()
+  -dynamic _saveTrackedHabits()
+  +bool isSameDay()
+  +bool isSameWeek()
+  +int weekNumber()
+  +dynamic refreshHabits()
+  +DateTime startOfWeek()
+  -dynamic _loadTrackedHabits()
+  -void _addHabitDialog()
+  -void _showMonthlyCalendar()
+  -dynamic _loadTrackedAddictions()
+  -dynamic _saveTrackedAddictions()
+  -String _formatDuration()
+  -void _addAddiction()
+  +IconData getIconFromData()
+  +String getTargetLabel()
+  -void _showAchievements()
+  +Widget build()
+}
+
+"levelup::progress.dart::_ProgressScreenState" o-- "dart::async::Timer"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::progress.dart::_ProgressScreenState"
+"flutter::src::widgets::binding.dart::WidgetsBindingObserver" <|-- "levelup::progress.dart::_ProgressScreenState"
+
+class "levelup::progress.dart::SemiCircularGauge" {
+  +double progressFraction
+  +Color fillColor
+  +Color backgroundColor
+  +double size
+  +String progressText
+  +String targetLabel
+  +Widget build()
+}
+
+"levelup::progress.dart::SemiCircularGauge" o-- "dart::ui::Color"
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::progress.dart::SemiCircularGauge"
+
+class "levelup::progress.dart::CalendarMonthView" {
+  +Map<String, dynamic> habit
+  +DateTime month
+  +State<CalendarMonthView> createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::progress.dart::CalendarMonthView"
+
+class "levelup::progress.dart::_CalendarMonthViewState" {
+  -DateTime _currentMonth
+  +void initState()
+  -void _prevMonth()
+  -void _nextMonth()
+  -bool _isCompletedOn()
+  +Widget build()
+  -String _monthName()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::progress.dart::_CalendarMonthViewState"
+
+class "levelup::progress.dart::_SemiCircularGaugePainter" {
+  +double progressFraction
+  +Color fillColor
+  +Color backgroundColor
+  +void paint()
+  +bool shouldRepaint()
+}
+
+"levelup::progress.dart::_SemiCircularGaugePainter" o-- "dart::ui::Color"
+"flutter::src::rendering::custom_paint.dart::CustomPainter" <|-- "levelup::progress.dart::_SemiCircularGaugePainter"
+
+class "levelup::signupprocess.dart::IntroductionFlow" {
+  +State<IntroductionFlow> createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::IntroductionFlow"
+
+class "levelup::signupprocess.dart::_IntroductionFlowState" {
+  +SharedPreferences prefs
+  +bool isPrefsLoaded
+  -dynamic _loadPrefs()
+  +void initState()
+  +Widget build()
+}
+
+"levelup::signupprocess.dart::_IntroductionFlowState" o-- "shared_preferences::src::shared_preferences_legacy.dart::SharedPreferences"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_IntroductionFlowState"
+
+class "levelup::signupprocess.dart::WelcomeScreen" {
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::signupprocess.dart::WelcomeScreen"
+
+class "levelup::signupprocess.dart::QuestionScreen" {
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::signupprocess.dart::QuestionScreen"
+
+class "levelup::signupprocess.dart::PreQuestionnaireScreen" {
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::StatelessWidget" <|-- "levelup::signupprocess.dart::PreQuestionnaireScreen"
+
+class "levelup::signupprocess.dart::NameQuestionScreen" {
+  +_NameQuestionScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::NameQuestionScreen"
+
+class "levelup::signupprocess.dart::_NameQuestionScreenState" {
+  -TextEditingController _firstNameController
+  -TextEditingController _lastNameController
+  -bool _isButtonEnabled
+  -void _saveFullNameAndProceed()
+  -void _validateInputs()
+  +Widget build()
+}
+
+"levelup::signupprocess.dart::_NameQuestionScreenState" o-- "flutter::src::widgets::editable_text.dart::TextEditingController"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_NameQuestionScreenState"
+
+class "levelup::signupprocess.dart::GenderQuestionScreen" {
+  +_GenderQuestionScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::GenderQuestionScreen"
+
+class "levelup::signupprocess.dart::_GenderQuestionScreenState" {
+  -String? _selectedGender
+  -void _saveGenderAndProceed()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_GenderQuestionScreenState"
+
+class "levelup::signupprocess.dart::AgeQuestionScreen" {
+  +_AgeQuestionScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::AgeQuestionScreen"
+
+class "levelup::signupprocess.dart::_AgeQuestionScreenState" {
+  -TextEditingController _selectedDateOfBirth
+  -void _saveBirthDateAndProceed()
+  -dynamic _selectDate()
+  +Widget build()
+}
+
+"levelup::signupprocess.dart::_AgeQuestionScreenState" o-- "flutter::src::widgets::editable_text.dart::TextEditingController"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_AgeQuestionScreenState"
+
+class "levelup::signupprocess.dart::LocationQuestionScreen" {
+  +_LocationQuestionScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::LocationQuestionScreen"
+
+class "levelup::signupprocess.dart::_LocationQuestionScreenState" {
+  -String? _selectedCountry
+  -void _saveCountryAndProceed()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_LocationQuestionScreenState"
+
+class "levelup::signupprocess.dart::AddictionQuestionScreen" {
+  +_AddictionQuestionScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::AddictionQuestionScreen"
+
+class "levelup::signupprocess.dart::_AddictionQuestionScreenState" {
+  -String? _selectedGamingSeverity
+  -void _saveGamingSeverityAndProceed()
+  +Widget build()
+}
+
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_AddictionQuestionScreenState"
+
+class "levelup::signupprocess.dart::UsernamePasswordScreen" {
+  +_UsernamePasswordScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::signupprocess.dart::UsernamePasswordScreen"
+
+class "levelup::signupprocess.dart::_UsernamePasswordScreenState" {
+  -TextEditingController _usernameController
+  -TextEditingController _passwordController
+  -ValueNotifier<bool> _isButtonEnabled
+  -bool _isPasswordVisible
+  +void initState()
+  +void dispose()
+  -void _validateInputs()
+  -dynamic _createAccount()
+  -dynamic _completeIntroduction()
+  +Widget build()
+}
+
+"levelup::signupprocess.dart::_UsernamePasswordScreenState" o-- "flutter::src::widgets::editable_text.dart::TextEditingController"
+"levelup::signupprocess.dart::_UsernamePasswordScreenState" o-- "flutter::src::foundation::change_notifier.dart::ValueNotifier<bool>"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::signupprocess.dart::_UsernamePasswordScreenState"
+
+class "levelup::social.dart::SocialScreen" {
+  +_SocialScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::social.dart::SocialScreen"
+
+class "levelup::social.dart::_SocialScreenState" {
+  -TextEditingController _searchController
+  -List<Map<String, String>> _friends
+  -List<Map<String, dynamic>> _users
+  +Map<String, IconData> platformIcons
+  -List<Map<String, dynamic>> _filteredUsers
+  -String _selectedAge
+  -String _selectedGender
+  -String _selectedCountry
+  -String _selectedPlatform
+  +void initState()
+  +void dispose()
+  -Widget _buildFriendTile()
+  -void _filterUsers()
+  -void _showSearchSettingsDialog()
+  -void _openProfileDetail()
+  +Widget build()
+}
+
+"levelup::social.dart::_SocialScreenState" o-- "flutter::src::widgets::editable_text.dart::TextEditingController"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::social.dart::_SocialScreenState"
+
+class "levelup::social.dart::ProfileDetailScreen" {
+  +Map<String, dynamic> user
+  +_ProfileDetailScreenState createState()
+}
+
+"flutter::src::widgets::framework.dart::StatefulWidget" <|-- "levelup::social.dart::ProfileDetailScreen"
+
+class "levelup::social.dart::_ProfileDetailScreenState" {
+  -bool _infoOverlayVisible
+  -PageController _pageController
+  -int _currentPage
+  +Map<String, IconData> platformIcons
+  -List<String> _carouselImages
+  -dynamic _shouldInterceptRequest()
+  -String _getMimeType()
+  -void _goToNextImage()
+  +Widget build()
+}
+
+"levelup::social.dart::_ProfileDetailScreenState" o-- "flutter::src::widgets::page_view.dart::PageController"
+"flutter::src::widgets::framework.dart::State" <|-- "levelup::social.dart::_ProfileDetailScreenState"
+
+class "levelup::userutils.dart::ProfileData" {
+  +String? avatarUrl
+}
+
+
+@enduml

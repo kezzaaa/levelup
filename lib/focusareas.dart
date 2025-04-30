@@ -61,7 +61,7 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
       await prefs.setStringList('userFocuses', _selectedAreas);
 
       if (widget.isEditing) {
-        Navigator.pop(context, true); // ✅ Pass `true` to signal a refresh
+        Navigator.pop(context, true); // Pass `true` to signal a refresh
       } else {
         Navigator.pushReplacement(
           context,
@@ -121,7 +121,7 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Add a search bar:
+            // Search bar
             TextField(
               onChanged: (value) {
                 setState(() {
@@ -157,13 +157,13 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ✅ Save button
+            // Save button
             Padding(
               padding: const EdgeInsets.only(bottom: 50.0),
               child: ElevatedButton(
                 onPressed: _selectedAreas.isNotEmpty
                     ? () async {
-                        await _saveFocusAreas(); // This already handles navigation
+                        await _saveFocusAreas();
                       }
                     : null, // Disable button if no option is selected
                 child: Text(widget.isEditing ? "Save & Update" : "Continue"),

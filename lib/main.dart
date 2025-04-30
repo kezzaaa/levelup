@@ -19,43 +19,42 @@ void main() async {
   // Ensure Flutter is initialized before fetching SharedPreferences
   WidgetsFlutterBinding.ensureInitialized(); 
   final prefs = await SharedPreferences.getInstance();
-  
-  // Clear SharedPreferences for wiping user data and starting from beginning
-  // await prefs.clear();
+  final bool savedSocialEnabled = prefs.getBool('socialEnabled') ?? false;
 
-  // Clear XP for testing purposes
-  // await prefs.setInt('userXP', 0);
-  // await prefs.setInt('userLevel', 1);
+  // Set initial blur state (true means blur is ON, so invert it)
+  blurEnabledNotifier = ValueNotifier<bool>(!savedSocialEnabled);
 
-  // Reset refresh tokens
-  // await prefs.setInt('refreshTokens', 3);
+  /* ============================================================================
+   * DEBUG CONTROL PANEL – SharedPreferences Reset Tools
+   * Uncomment any of the following lines to clear data or simulate app states.
+   * ========================================================================== */
 
-  // Reset active missions
-  // await prefs.remove('completedMissions');
-  // await prefs.remove('activeSystemMissions');
-  // await prefs.remove('dailyResetTime');
-  // await prefs.remove('weeklyResetTime');
-  // await prefs.remove('monthlyResetTime');
+  // await prefs.clear();                           // Wipe all user data (full reset)
 
-  // Remove focus areas
-  // await prefs.remove('userFocuses');
+  // await prefs.setInt('userXP', 0);               // Reset XP
+  // await prefs.setInt('userLevel', 1);            // Reset Level
+  // await prefs.setInt('refreshTokens', 3);        // Reset Refresh Tokens
 
-  // Remove profile picture
-  // await prefs.remove('profilePath');
+  // await prefs.remove('completedMissions');       // Clear completed system missions
+  // await prefs.remove('activeSystemMissions');    // Clear active missions
+  // await prefs.remove('dailyResetTime');          // Clear daily reset timer
+  // await prefs.remove('weeklyResetTime');         // Clear weekly reset timer
+  // await prefs.remove('monthlyResetTime');        // Clear monthly reset timer
 
-  // Reset skill bars for testing
-  // await resetAllSkillBars();
+  // await prefs.remove('userFocuses');             // Remove focus area selections
+  // await prefs.remove('profilePath');             // Remove saved avatar path
 
-  // Clear stored gaming sessions
-  // await prefs.remove('gamingSessions');
+  // await resetAllSkillBars();                     // Reset skill stat percentages
 
-  // Clear user tags
-  // await prefs.remove('userPreferences');
-  // await prefs.remove('answeredQuestions');
-  
-  // Clear tracked addicitions and habits
-  // await prefs.remove('trackedAddictions');
-  // await prefs.remove('trackedHabits');
+  // await prefs.remove('gamingSessions');          // Clear tracked gaming sessions
+
+  // await prefs.remove('userPreferences');         // Clear user tags/preferences
+  // await prefs.remove('answeredQuestions');       // Clear onboarding answers
+
+  // await prefs.remove('trackedAddictions');       // Clear addiction timers
+  // await prefs.remove('trackedHabits');           // Clear habit trackers
+
+  /* ========================================================================== */
 
   // Create and print user on start
   String? userId = await createGuestUser();
@@ -189,7 +188,7 @@ class _InitialiseState extends State<Initialise> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     );
 
-    // ✅ Navigate after 3 seconds, keeping animation active
+    // Navigate after 3 seconds, keeping animation active
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {

@@ -25,14 +25,14 @@ ProfileData? build3DAvatarUrl(SharedPreferences prefs) {
 String build2DAvatarUrl(String fullAvatarUrl) {
   const String baseUrl = "https://models.readyplayer.me/";
   // If the fullAvatarUrl starts with the baseUrl and ends with .glb,
-  // extract the avatar id from it.
+  // extract the avatar id from it
   if (fullAvatarUrl.startsWith(baseUrl)) {
     // Remove the base and the .glb extension
     String id = fullAvatarUrl.substring(baseUrl.length).replaceAll('.glb', '');
     // Construct the 2D image URL using the id
     return "$baseUrl$id.png?blendShapes[mouthSmile]=0.8";
   }
-  // Otherwise, fallback to the original URL.
+  // Otherwise, fallback to the original URL
   return fullAvatarUrl;
 }
 
@@ -40,13 +40,13 @@ Future<String?> createGuestUser() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String? storedUserId = prefs.getString('guestUserId');
 
-  // ✅ If a user already exists, return the same user ID
+  // If a user already exists, return the same user ID
   if (storedUserId != null) {
     debugPrint("🔄 Using existing guest user ID: $storedUserId");
     return storedUserId;
   }
 
-  // ✅ Otherwise, create a new guest user
+  // Otherwise, create a new guest user
   try {
     final response = await http.post(
       Uri.parse("https://api.readyplayer.me/v1/users"),
@@ -61,11 +61,11 @@ Future<String?> createGuestUser() async {
       }),
     );
 
-    if (response.statusCode == 200 || response.statusCode == 201) { // ✅ Handle 201 as well
+    if (response.statusCode == 200 || response.statusCode == 201) { // Handle 201
       final data = jsonDecode(response.body);
       String newUserId = data['data']['id'];
 
-      // ✅ Store the guest user ID for future app restarts
+      // Store the guest user ID for future app restarts
       await prefs.setString('guestUserId', newUserId);
 
       debugPrint("✅ Created new guest user ID: $newUserId");
@@ -86,13 +86,13 @@ String subdomain = "25210394-sz5yd2";
 Future<String?> getSessionToken(String userId) async {
   final response = await http.get(
     Uri.parse(
-        'https://api.readyplayer.me/v1/auth/token?userId=$userId&partner=$subdomain'), // Replace with your subdomain
+        'https://api.readyplayer.me/v1/auth/token?userId=$userId&partner=$subdomain'),
     headers: {
       'x-api-key': 'sk_live_6SlgKmUtxreglkIWRKpHMDDrZu6ocfIyryLo'
     },
   );
 
-  if (response.statusCode == 200 || response.statusCode == 201) { // ✅ Handle 201 as well
+  if (response.statusCode == 200 || response.statusCode == 201) { // Handle 201
     final responseData = jsonDecode(response.body);
     String token = responseData['data']['token'];
     debugPrint("✅ Successfully generated session token: $token");
@@ -104,9 +104,10 @@ Future<String?> getSessionToken(String userId) async {
   }
 }
 
-  int getXpThresholdForLevel(int level) {
-    return level * 10;
-  }
+// Global XP threshold
+int getXpThresholdForLevel(int level) {
+  return level * 10;
+}
 
 class ProfileData {
   ProfileData(this.avatarUrl);

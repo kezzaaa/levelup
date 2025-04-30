@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadXPData();
     _loadHearts();
 
-    // ✅ Automatically reload WebView when returning from Avatar Editor
+    // Automatically reload WebView when returning from Avatar Editor
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.shouldReload) {
         webViewController?.reload();
@@ -76,12 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
     bool hasSeenTutorial = prefs.getBool('hasSeenHomeTutorial') ?? false;
 
     if (!hasSeenTutorial) {
-      // ✅ Show tutorial pop-up
+      // Show tutorial pop-up
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) _showHomeTutorial(context);
       });
 
-      // ✅ Mark tutorial as seen
+      // Mark tutorial as seen
       await prefs.setBool('hasSeenHomeTutorial', true);
     }
   }
@@ -149,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     int xpThreshold = getXpThresholdForLevel(_level);
 
-    // 🚀 Level-up logic
+    // Level-up logic
     while (_xp >= xpThreshold) {
       _xp -= xpThreshold;
       _level++;
@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✨ Show a pop-up animation when leveling up
+  // Show a pop-up animation when leveling up
   void _showLevelUpDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ Load avatar data from SharedPreferences and update the UI
+  // Load avatar data from SharedPreferences and update the UI
   Future<void> _loadAvatar() async {
     final prefs = await SharedPreferences.getInstance();
     final ProfileData? profile = build3DAvatarUrl(prefs);
@@ -261,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✅ Helper function to get correct MIME type for assets
+  // Helper function to get correct MIME type for assets
   String _getMimeType(String path) {
     if (path.endsWith(".html")) return "text/html";
     if (path.endsWith(".js")) return "application/javascript";
@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return "text/plain";
   }
 
-  // ✅ Open Fullscreen Avatar Creator
+  // Open Fullscreen Avatar Creator
   void openAvatarEditor() async {
     final prefs = await SharedPreferences.getInstance();
     Navigator.push(
@@ -292,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
           debugPrint("❌ Failed to load updated avatar URL");
         }
 
-        // ✅ Reload WebView with updated model
+        // Reload WebView with updated model
         webViewController?.reload();
         debugPrint("🔄 WebView reloaded after avatar edit.");
       }
@@ -303,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     bool sessionActive = prefs.getBool('gamingSessionActive') ?? false;
     
-    // Only restore the session if it is still active.
+    // Only restore the session if it is still active
     if (sessionActive) {
       bool gamingIsPaused = prefs.getBool('gamingIsPaused') ?? false;
       if (gamingIsPaused) {
@@ -327,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _startTimer();
       }
     } else {
-      // No active session: reset state.
+      // No active session: reset state
       setState(() {
         isGaming = false;
         isPaused = false;
@@ -352,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
             height: 150,
             child: Row(
               children: [
-                // Hours picker.
+                // Hours picker
                 Expanded(
                   child: CupertinoPicker(
                     itemExtent: 32.0,
@@ -370,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                // Minutes picker in 15-minute increments.
+                // Minutes picker in 15-minute increments
                 Expanded(
                   child: CupertinoPicker(
                     itemExtent: 32.0,
@@ -420,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ Start the Timer (Runs in Background)
+  // Start the Timer
   void _startTimer() {
     sessionTimer?.cancel();
     sessionTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
@@ -429,22 +429,22 @@ class _HomeScreenState extends State<HomeScreen> {
           elapsedSeconds++;
         });
 
-        // Check if a time limit is set.
+        // Check if a time limit is set
         if (_gamingTimeLimit != null && _gamingTimeLimit!.isNotEmpty) {
           int limitMinutes = parseGamingTimeLimit(_gamingTimeLimit!);
           int limitSeconds = limitMinutes * 60;
           if (elapsedSeconds >= limitSeconds && !_hasLostHeartForCurrentSession) {
-            final prefs = await SharedPreferences.getInstance(); // <-- Obtain prefs here.
+            final prefs = await SharedPreferences.getInstance();
             // Lose a heart.
             if (heartsRemaining > 0) {
               setState(() {
                 heartsRemaining--;
                 _hasLostHeartForCurrentSession = true;
               });
-              // Save the updated heartsRemaining.
+              // Save the updated heartsRemaining
               await prefs.setInt('heartsRemaining', heartsRemaining);
             }
-            // Show alert dialog, then stop the session.
+            // Show alert dialog, then stop the session
             stopGamingSession();
             await _showTimeLimitExceededDialog();
           }
@@ -475,11 +475,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ Start/Stop or Pause/Resume the Gaming Session
+  // Start/Stop or Pause/Resume the Gaming Session
   void toggleGamingSession() async {
     final prefs = await SharedPreferences.getInstance();
     if (!isGaming) {
-      // 🟢 Start gaming session: set start time and initialize elapsedSeconds to 885 (14:45) for testing.
+      // Start gaming session: set start time and initialize elapsedSeconds to 885 (14:45) for testing.
       int currentTime = DateTime.now().millisecondsSinceEpoch;
       await prefs.setInt('gamingStartTime', currentTime);
       await prefs.setBool('gamingSessionActive', true);
@@ -513,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✅ Stop the Gaming Session (separate from pause/resume)
+  // Stop the Gaming Session (separate from pause/resume)
   void stopGamingSession() async {
     final prefs = await SharedPreferences.getInstance();
     
@@ -598,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
   return hours * 60 + minutes;
 }
 
-  // ✅ Format Time to HH:MM:SS
+  // Format Time to HH:MM:SS
   String formatTime(int seconds) {
     int hours = seconds ~/ 3600;
     int minutes = (seconds % 3600) ~/ 60;
@@ -625,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, setState) {
             return Dialog(
               child: Container(
-                height: 325, // adjust the height as needed
+                height: 325, // Adjust the height as needed
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
@@ -757,7 +757,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    // "Got it!" button to dismiss the dialog
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text("Got it!"),
@@ -793,7 +792,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           SizedBox(height: 20),
 
-          // 🔹 Row 1: Top Section (XP Bar + Level Indicator)
+          // Row 1: Top Section (XP Bar + Level Indicator)
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.050,
             child: Padding(
@@ -801,7 +800,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 🔵 Level Indicator (Cyan Circle with White Number)
+                  // Level Indicator
                   Container(
                     width: 40,
                     height: 40,
@@ -822,18 +821,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-
-                  // 🌟 XP Bar (Cyan progress with white border)
+                  // XP Bar
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         double progressValue = _xp / getXpThresholdForLevel(_level);
                         double filledWidth = constraints.maxWidth * progressValue;
-                        // Format percentage value.
+                        // Format percentage value
                         int percent = (progressValue * 100).toInt();
                         return Stack(
                           children: [
-                            // Background XP Bar.
+                            // Background XP Bar
                             Container(
                               height: 20,
                               decoration: BoxDecoration(
@@ -841,7 +839,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            // Conditionally render the filled progress bar.
+                            // Conditionally render the filled progress bar
                             progressValue > 0
                                 ? AnimatedContainer(
                                     duration: const Duration(milliseconds: 1000),
@@ -854,7 +852,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   )
                                 : const SizedBox.shrink(),
-                            // Conditionally position the percentage text.
+                            // Conditionally position the percentage text
                             progressValue > 0
                                 ? Positioned(
                                     left: 0,
@@ -897,7 +895,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 10),
 
-          // ❤️ Hearts Row (Health Indicator)
+          // Hearts Row (Health Indicator)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
@@ -909,7 +907,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 30,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: index < heartsRemaining ? Colors.red : Colors.grey, // Grey out lost hearts.
+                    color: index < heartsRemaining ? Colors.red : Colors.grey, // Grey out lost hearts
                     border: Border.all(color: Colors.white, width: 2),
                   ),
                   child: const Center(
@@ -924,12 +922,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 🔹 Row 2: Avatar Section (WebView + Edit Icon)
+          // Row 2: Avatar Section (WebView + Edit Icon)
           Expanded(
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // 🌍 WebView Displaying Avatar
+                // WebView Displaying Avatar
                 InAppWebView(
                   initialUrlRequest: URLRequest(
                     url: WebUri("https://localhost/assets/viewer.html"),
@@ -946,7 +944,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (webViewController == null) {
                       webViewController = controller;
 
-                      // ✅ Add JavaScript handler to listen for messages from JavaScript
+                      // Add JavaScript handler to listen for messages from JavaScript
                       webViewController!.addJavaScriptHandler(
                         handlerName: 'danceTriggered',
                         callback: (args) {
@@ -976,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final prefs = await SharedPreferences.getInstance();
                     final String? userGender = prefs.getString('userGender');
 
-                    // ✅ Set user gender in JavaScript
+                    // Set user gender in JavaScript
                     if (userGender != null) {
                       await webViewController!.evaluateJavascript(
                         source: "window.setUserGender('$userGender');",
@@ -984,7 +982,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       debugPrint("✅ Sent user gender to WebView: $userGender");
                     }
 
-                    // ✅ Load GLB model in JavaScript
+                    // Load GLB model in JavaScript
                     if (srcGlb.isNotEmpty) {
                       await webViewController!.evaluateJavascript(
                         source: "loadGLBModel('$srcGlb');",
@@ -994,7 +992,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
 
-                // ✏️ Floating Edit & Dance Buttons
+                // Floating Edit & Dance Buttons
                 Positioned(
                   top: 75,
                   right: 20,
@@ -1025,7 +1023,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 🔹 Row 3: Bottom Section (Start Gaming Session Button)
+          // Row 3: Bottom Section (Start Gaming Session Button)
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.16,
             child: Center(

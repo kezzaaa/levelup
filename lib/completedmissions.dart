@@ -31,8 +31,6 @@ class _CompletedMissionsScreenState extends State<CompletedMissionsScreen> {
     });
   }
 
-
-
   /// Predefined color mapping for focus areas
   final Map<String, Color> focusColors = {
     '💪  Fitness': Colors.red,
@@ -59,19 +57,19 @@ class _CompletedMissionsScreenState extends State<CompletedMissionsScreen> {
       appBar: AppBar(title: const Text('Completed Missions')),
       body: Column(
         children: [
-          // ✅ Skill Buttons Column (Full Width)
+          // Skill Buttons Column (Full Width)
           if (userFocuses.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               child: Column(
                 children: userFocuses.map((focus) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8), // Spacing between buttons
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: SizedBox(
-                      width: double.infinity, // ✅ Full width
+                      width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          // ✅ Navigate to new page with filtered missions
+                          // Navigate to new page with filtered missions
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -83,14 +81,14 @@ class _CompletedMissionsScreenState extends State<CompletedMissionsScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: focusColors[focus] ?? Colors.grey, // ✅ Assign color from focusColors
+                          backgroundColor: focusColors[focus] ?? Colors.grey, // Assign color from focusColors
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: Text(
                           focus,
                           style: const TextStyle(color: Colors.white, fontSize: 16),
-                          textAlign: TextAlign.center, // ✅ Center text inside button
+                          textAlign: TextAlign.center, // Center text inside button
                         ),
                       ),
                     ),

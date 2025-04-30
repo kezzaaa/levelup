@@ -2,6 +2,7 @@
 
 // Packages
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:levelup/nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -114,6 +115,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                  ],
                 ),
                 const SizedBox(height: 20),
 

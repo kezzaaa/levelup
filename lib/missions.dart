@@ -86,11 +86,11 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
         setState(() {}); // Update countdown every second
     });
 
-    // ✅ Load missions first, then create if necessary
+    // Load missions first, then create if necessary
     _loadMissions().then((_) async {
       SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // ✅ Load saved filters, if available
+      // Load saved filters, if available
       _userFilter = prefs.getString('userFilter') ?? 'daily';
       _systemFilter = prefs.getString('systemFilter') ?? 'daily';
 
@@ -102,7 +102,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
           _createMissions("monthly", 3);
       }
 
-      setState(() {}); // ✅ Update UI with loaded filters
+      setState(() {}); // Update UI with loaded filters
     });
 
     _loadMissionTimers();
@@ -167,18 +167,18 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     });
   }
 
-  // ✅ Function to check if user has seen mission tutorial before
+  // Function to check if user has seen mission tutorial before
   Future<void> _checkFirstTimeUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool hasSeenTutorial = prefs.getBool('hasSeenMissionTutorial') ?? false;
 
     if (!hasSeenTutorial) {
-      // ✅ Show tutorial pop-up
+      // Show tutorial pop-up
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) _showMissionsTutorial(context);
       });
 
-      // ✅ Mark tutorial as seen
+      // Mark tutorial as seen
       await prefs.setBool('hasSeenMissionTutorial', true);
     }
   }
@@ -213,20 +213,20 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
           normalizedSelectedAreas.contains(m['skillsector']) &&
           !excludeNames.contains(m['title']);
 
-      // ✅ Check if the mission has a 'tags' property and is not empty
+      // Check if the mission has a 'tags' property and is not empty
       if (m.containsKey('tags') && m['tags'] is List && m['tags'].isNotEmpty) {
         List<String> missionTags = List<String>.from(m['tags']); // Convert to List<String>
 
-        // ✅ Ensure at least one mission tag matches a user preference
+        // Ensure at least one mission tag matches a user preference
         bool tagMatch = missionTags.any((tag) => userPreferences.contains(tag));
-        if (!tagMatch) return false; // ❌ Exclude mission if no matching tags
+        if (!tagMatch) return false; // Exclude mission if no matching tags
       }
 
-      // ✅ Check if the mission has an 'exclusions' property
+      // Check if the mission has an 'exclusions' property
       if (m.containsKey('exclusions') && m['exclusions'] is List && m['exclusions'].isNotEmpty) {
         List<String> missionExclusions = List<String>.from(m['exclusions']); // Convert to List<String>
 
-        // ❌ If any exclusion matches a user preference, filter the mission out
+        // If any exclusion matches a user preference, filter the mission out
         bool hasExclusionConflict = missionExclusions.any((exclusion) => userPreferences.contains(exclusion));
         if (hasExclusionConflict) return false;
       }
@@ -260,7 +260,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     return selectedMissions;
   }
 
-  // ✅ Function to generate a unique ID
+  // Function to generate a unique ID
   int _generateUniqueId() {
       return DateTime.now().millisecondsSinceEpoch * 1000 + Random().nextInt(1000);
   }
@@ -268,11 +268,11 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
   Future<void> _saveActiveMissions() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // ✅ Save system missions
+    // Save system missions
     List<String> systemMissionsJson = _systemMissions.map((m) => json.encode(m)).toList();
     await prefs.setStringList('activeSystemMissions', systemMissionsJson);
 
-    // ✅ Save user-created missions
+    // Save user-created missions
     List<String> userMissionsJson = _userMissions.map((m) => json.encode(m)).toList();
     await prefs.setStringList('activeUserMissions', userMissionsJson);
 
@@ -320,7 +320,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
             _userMissions.addAll(userMissions);
         });
 
-        // 🔄 Only create new missions if no saved missions exist
+        // Only create new missions if no saved missions exist
         if (_systemMissions.isEmpty) {
             debugPrint("🛠️ No active system missions found. Creating new ones...");
             await _createMissions("daily", 3);
@@ -384,14 +384,14 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
   void _resetMissions(String type) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 🛠️ Step 1: Remove old missions for this type
+    // Step 1: Remove old missions for this type
     setState(() {
         _systemMissions.removeWhere((m) => m['type'] == type);
     });
 
     await Future.delayed(Duration(milliseconds: 100)); // Let Flutter process state update
 
-    // 🆕 Step 2: Create new missions for this type
+    // Step 2: Create new missions for this type
     List<Map<String, dynamic>> newMissions = await _createMissions(type, 3, clearExisting: false);
 
     if (newMissions.isEmpty) {
@@ -399,7 +399,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
         return;
     }
 
-    // ✅ Step 3: Ensure unique IDs and add them to the mission list
+    // Step 3: Ensure unique IDs and add them to the mission list
     Set<int> existingIds = _systemMissions.map((m) => m['id'] as int).toSet();
     newMissions.removeWhere((m) => existingIds.contains(m['id']));
 
@@ -407,20 +407,20 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
         _systemMissions.addAll(newMissions);
     });
 
-    // ✅ Step 4: Save updated mission list
+    // Step 4: Save updated mission list
     await prefs.setStringList(
         'activeSystemMissions',
         _systemMissions.map((m) => json.encode(m)).toList(),
     );
 
-    // ✅ Step 5: Update reset time
+    // Step 5: Update reset time
     int newResetTime = _getNextResetTime(type);
     await prefs.setInt('${type}ResetTime', newResetTime);
 
     debugPrint("✅ $type missions reset! New reset time: $newResetTime");
   }
 
-  // ✅ Load refresh tokens from SharedPreferences
+  // Load refresh tokens from SharedPreferences
   Future<void> _loadRefreshTokens() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -428,7 +428,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     });
   }
 
-  // ✅ Save refresh token count
+  // Save refresh token count
   Future<void> _updateRefreshTokens(int amount) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -437,7 +437,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     await prefs.setInt('refreshTokens', _refreshTokens);
   }
 
-  // ✅ Function to show missions tutorial pop-up
+  // Function to show missions tutorial pop-up
   void _showMissionsTutorial(BuildContext context) {
     final PageController pageController = PageController();
     const int totalPages = 5;
@@ -478,7 +478,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                               ),
                               SizedBox(height: 10),
                               Text(
-                                "Complete missions to earn XP and skill points, that level up your avatar. 🎁",
+                                "Complete missions to earn XP and skill points, that level up your avatar. View them by clicking the trophy icon! 🏆",
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -497,7 +497,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                               ),
                               SizedBox(height: 10),
                               Text(
-                                "LevelUp missions are auto-generated and are themed based on your selected focus areas from before. They can be refreshed for new ones by swiping left ⬅️",
+                                "LevelUp missions are auto-generated and are themed based on your selected focus areas. They can be refreshed for new ones by swiping left ⬅️",
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -554,7 +554,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                               ),
                               SizedBox(height: 10),
                               Text(
-                                "• Press the '+ Add' button to create custom missions! Or get started on a LevelUp mission! 📝\n\nStart your journey now! 🗺️",
+                                "Press the '+ Add' button to create custom missions! Or get started on a LevelUp mission! 📝\n\nStart your journey now! 🗺️",
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -610,7 +610,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     );
   }
 
-  // ✅ Function to add new mission
+  // Function to add new mission
   void _addMission() {
     TextEditingController titleController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
@@ -710,7 +710,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                                 .contains(textEditingValue.text.toLowerCase());
                           });
                         },
-                        // Custom options view with a dark grey background and title-cased values.
+                        // Custom options view with a dark grey background and title-cased values
                         optionsViewBuilder: (context, onSelected, options) {
                           return Align(
                             alignment: Alignment.topLeft,
@@ -749,7 +749,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                             decoration: InputDecoration(
                               labelText: "Skill Sector",
                               hintText: "Leave blank for none",
-                              suffixIcon: const Icon(Icons.search, color: Colors.white), // Search icon on the right.
+                              suffixIcon: const Icon(Icons.search, color: Colors.white), // Search icon on the right
                             ),
                             style: const TextStyle(color: Colors.white),
                           );
@@ -919,15 +919,15 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
 
         if (currentProgress < segments) {
             setState(() {
-                _userMissions[index]['progress']++;  // ✅ Increment progress
+                _userMissions[index]['progress']++;  // Increment progress
             });
 
             await prefs.setInt('progress_$missionTitle', _userMissions[index]['progress']);
         }
 
-        // ✅ Delay marking as completed so the UI updates properly
+        // Delay marking as completed so the UI updates properly
         if (_userMissions[index]['progress'] >= segments) {
-            Future.delayed(const Duration(milliseconds: 0), () { // ✅ Short delay to allow UI to update
+            Future.delayed(const Duration(milliseconds: 0), () { // Short delay to allow UI to update
                 if (mounted) {
                     setState(() {
                         _userMissions[index]['completed'] = true;
@@ -938,8 +938,8 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                 }
             });
 
-            // ✅ Ensure full fade-out before removing
-            Future.delayed(const Duration(milliseconds: 1000), () { // 🔥 Forces full 1.5s fade-out
+            // Ensure full fade-out before removing
+            Future.delayed(const Duration(milliseconds: 1000), () { // Forces full 1.5s fade-out
                 if (mounted && index < _userMissions.length) {
                     setState(() {
                         _userMissions.removeAt(index);
@@ -957,15 +957,15 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
 
         if (currentProgress < segments) {
             setState(() {
-                _systemMissions[index]['progress']++;  // ✅ Increment progress
+                _systemMissions[index]['progress']++;  // Increment progress
             });
 
             await prefs.setInt('progress_$missionTitle', _systemMissions[index]['progress']);
         }
 
-        // ✅ Delay marking as completed so the UI updates properly
+        // Delay marking as completed so the UI updates properly
         if (_systemMissions[index]['progress'] >= segments) {
-            Future.delayed(const Duration(milliseconds: 0), () { // ✅ Short delay to allow UI to update
+            Future.delayed(const Duration(milliseconds: 0), () { // Short delay to allow UI to update
               if (mounted) {
                 setState(() {
                   _systemMissions[index]['completed'] = true;
@@ -988,8 +988,8 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
               }
             });
 
-            // ✅ Ensure full fade-out before removing
-            Future.delayed(const Duration(milliseconds: 1000), () { // 🔥 Forces full 1.5s fade-out
+            // Ensure full fade-out before removing
+            Future.delayed(const Duration(milliseconds: 1000), () { // Forces full 1.5s fade-out
                 if (mounted && index < _systemMissions.length) {
                     setState(() {
                         _systemMissions.removeAt(index);
@@ -1000,7 +1000,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     }
   }
 
-  // ✅ Complete a mission, reward XP, and update skill stat
+  // Complete a mission, reward XP, and update skill stat
   void completeMission(int xpReward, int missionSkillPoints, String focusArea) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -1012,24 +1012,24 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     currentXP += xpReward;
     int xpThreshold = getXpThresholdForLevel(currentLevel);
 
-    // 🚀 Level-up logic
+    // Level-up logic
     while (currentXP >= xpThreshold) {
       currentXP -= xpThreshold;
       currentLevel++;
       xpThreshold = getXpThresholdForLevel(currentLevel);
 
-      // 🔥 Grant +3 Refresh Tokens on Level Up
+      // Grant +3 Refresh Tokens on Level Up
       refreshTokens += 3;
 
       debugPrint("🎉 Level Up! New Level = $currentLevel, Refresh Tokens = $refreshTokens");
     }
 
-    // ✅ Save updated values to SharedPreferences
+    // Save updated values to SharedPreferences
     await prefs.setInt('userXP', currentXP);
     await prefs.setInt('userLevel', currentLevel);
-    await prefs.setInt('refreshTokens', refreshTokens); // ✅ Save refresh tokens
+    await prefs.setInt('refreshTokens', refreshTokens); // Save refresh tokens
 
-    // ✅ Skill Stat Update
+    // Skill Stat Update
     String normalizedFocusArea = focusArea.trim().toLowerCase();
     int currentSkillPercent = prefs.getInt('skillPercent_$normalizedFocusArea') ?? 0;
     currentSkillPercent += missionSkillPoints * 10;
@@ -1038,7 +1038,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     debugPrint("🎯 Mission Completed: +$xpReward XP, $missionSkillPoints SP in $focusArea");
     debugPrint("💎 Updated Refresh Tokens: $refreshTokens");
 
-    // ✅ Close the mission screen & return XP gained
+    // Close the mission screen & return XP gained
     if (Navigator.canPop(context)) {
       Navigator.pop(context, xpReward);
     }
@@ -1069,7 +1069,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     }
   }
 
-  // ✅ Show confirmation popup before refreshing a mission
+  // Show confirmation popup before refreshing a mission
   Future<bool?> _showRefreshConfirmation(int index) async {
     if (_refreshTokens <= 0) {
       return showDialog<bool>(
@@ -1091,7 +1091,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
       );
     }
 
-    // ✅ Show Confirmation Dialog if User Has Tokens
+    // Show Confirmation Dialog if User Has Tokens
     return showDialog<bool>(
       context: context,
       builder: (context) {
@@ -1102,11 +1102,11 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false), // ❌ Cancel
+              onPressed: () => Navigator.pop(context, false), // Cancel
               child: const Text("Cancel"),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, true), // ✅ Confirm Refresh
+              onPressed: () => Navigator.pop(context, true), // Confirm Refresh
               child: const Text("Yes"),
             ),
           ],
@@ -1115,7 +1115,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
     );
   }
 
-  // ✅ Refresh a mission
+  // Refresh a mission
   void _deductRefreshToken(int index) async {
     if (_refreshTokens <= 0) return; // Stop if no tokens left
     await _updateRefreshTokens(-1); // Deduct a refresh token
@@ -1123,7 +1123,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
 
   Future<void> _setUserFilter(String filter) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userFilter', filter); // ✅ Save filter selection
+    await prefs.setString('userFilter', filter); // Save filter selection
     setState(() {
         _userFilter = filter;
     });
@@ -1131,7 +1131,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
 
   Future<void> _setSystemFilter(String filter) async {
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('systemFilter', filter); // ✅ Save filter selection
+      await prefs.setString('systemFilter', filter); // Save filter selection
       setState(() {
           _systemFilter = filter;
       });
@@ -1145,7 +1145,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
       height: 25,
       child: TextButton(
         onPressed: () async {
-          await onFilterChange(type); // ✅ Calls the correct filter function
+          await onFilterChange(type); // Calls the correct filter function
           setState(() {}); // ✅ Triggers UI update
         },
         style: TextButton.styleFrom(
@@ -1232,7 +1232,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
         ? 0
         : (mission.containsKey('skillpoints') ? mission['skillpoints'] : 0);
     String skillSector = mission.containsKey('skillsector') 
-        ? mission['skillsector'] 
+        ? mission['skillsector'].toString().trim().toLowerCase()
         : '';
 
     int segments = mission.containsKey('segments') ? mission['segments'] : 1;
@@ -1423,7 +1423,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                 ],
               ),
             ),
-            // 🔽 EXPANDED CONTENT (Only visible when expanded)
+            // Expanded Content (Only visible when expanded)
             if (mission['expanded'])
               Container(
                 decoration: BoxDecoration(
@@ -1436,7 +1436,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ⭐ Difficulty Rating System (Now works for both User & System Missions)
+                    // Difficulty Rating System (Now works for both User & System Missions)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -1489,7 +1489,7 @@ class _MissionsScreenState extends State<MissionsScreen> with WidgetsBindingObse
                                 ),
                               ),
                               const SizedBox(width: 5), // Spacing between XP and triangle
-                              // 🔺 Triangle and Number Wrapped in Stack
+                              // Triangle and Number Wrapped in Stack
                               Stack(
                                 alignment: Alignment.center,
                                 children: [
@@ -1732,7 +1732,7 @@ class RoundedTrianglePainter extends CustomPainter {
       ..color = fillColor
       ..style = PaintingStyle.fill;
 
-    // 🔺 Equilateral Triangle Size Calculation
+    // Equilateral Triangle Size Calculation
     double baseWidth = size.width * 1;
     double height = (sqrt(3) / 2) * baseWidth;
 
@@ -1747,10 +1747,10 @@ class RoundedTrianglePainter extends CustomPainter {
       ..lineTo(bottomLeft.dx + cornerRadius, bottomLeft.dy - cornerRadius)
       ..close();
 
-    // 🔲 **Draw White Border First**
+    // Draw White Border First
     canvas.drawPath(trianglePath, borderPaint);
 
-    // 🔺 **Draw Filled Triangle Slightly Smaller**
+    // Draw Filled Triangle Slightly Smaller
     Path fillTrianglePath = Path()
       ..moveTo(topPoint.dx, topPoint.dy + borderWidth) // Shift down for padding
       ..lineTo(bottomRight.dx - borderWidth, bottomRight.dy - borderWidth)

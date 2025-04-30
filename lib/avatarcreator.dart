@@ -74,7 +74,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Show overlay for 3 seconds
+    // Show overlay for 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
@@ -82,7 +82,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
         });
       }
     });
-    // ✅ Initialize WebViewController
+    // Initialize WebViewController
     _webViewController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF212121))
@@ -94,7 +94,7 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
           onPageFinished: (String url) {
             debugPrint("Page finished loading: $url");
             loadGuestSession();
-          // ✅ Show Avatar Creator Tip ONLY during signup (not editing)
+          // Show Avatar Creator Tip ONLY during signup (not editing)
           if (!widget.isEditing) {
             Future.delayed(const Duration(milliseconds: 500), () { // Small delay to ensure rendering
               if (mounted) _showAvatarCreatorTip(context);
@@ -213,10 +213,10 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             if (widget.isEditing) {
-              // ✅ If editing, pop back to HomeScreen and trigger a refresh
+              // If editing, pop back to HomeScreen and trigger a refresh
               Navigator.pop(context, true);
             } else {
-              // ✅ If signing up, go back to questionnaire
+              // If signing up, go back to questionnaire
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const FocusAreaScreen()),
@@ -228,23 +228,23 @@ class _AvatarCreatorScreenState extends State<AvatarCreatorScreen> {
       ),
       body: Stack(
         children: [
-          // ✅ WebView in the background
+          // WebView in the background
           WebViewWidget(controller: _webViewController),
 
-          // ✅ Fullscreen overlay (Shows for 3 seconds, then disappears)
+          // Fullscreen overlay (Shows for 3 seconds, then disappears)
           if (_showOverlay)
             Container(
-              color: Color(0xFF212121), // 🔥 Fullscreen overlay
+              color: Color(0xFF212121), // Fullscreen overlay
               alignment: Alignment.center,
-              padding: EdgeInsets.only(bottom: 150), // ✅ Adjust this value to move text higher
+              padding: EdgeInsets.only(bottom: 150),
               child: Column(
-                mainAxisSize: MainAxisSize.min, // ✅ Ensures the content takes minimum space
+                mainAxisSize: MainAxisSize.min, // Ensures the content takes minimum space
                 children: [
-                  CircularProgressIndicator( // 🔥 Loading animation
-                    color: Colors.white, // ✅ Match the theme
-                    strokeWidth: 3, // ✅ Adjust thickness
+                  CircularProgressIndicator( // Loading animation
+                    color: Colors.white,
+                    strokeWidth: 3,
                   ),
-                  SizedBox(height: 20), // ✅ Spacing between loader & text
+                  SizedBox(height: 20), // Spacing between loader & text
                   Text(
                     "Loading...",
                     style: Theme.of(context).textTheme.bodyLarge,

@@ -12,9 +12,9 @@ import 'package:levelup/missions.dart';
 import 'package:levelup/progress.dart';
 
 class Navigation extends StatefulWidget {
-  final int newIndex; // ✅ Correct parameter
+  final int newIndex;
 
-  const Navigation({super.key, this.newIndex = 2}); // ✅ Default to home tab
+  const Navigation({super.key, this.newIndex = 2}); // Default to home tab
 
   @override
   _NavigationState createState() => _NavigationState();

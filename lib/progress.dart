@@ -144,10 +144,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  "Edit your life focuses and see their current level 💫\n"
-                  "Earn and see your achievements by clicking the medal icon 🏅\n"
-                  "Set habits and mark them off option daily 📑\n"
-                  "Wanting to quit something? Use the addiction tracker! ❌\n",
+                  "• Edit your life focuses and see their current level 💫\n\n"
+                  "• Earn and see your achievements by clicking the medal icon 🏅\n\n"
+                  "• Set habits and mark them off daily 📑\n\n"
+                  "• Wanting to quit something? Use the addiction tracker! ❌\n",
                   textAlign: TextAlign.center,
                 ),
                 TextButton(
@@ -485,7 +485,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       builder: (BuildContext ctx) {
         return Dialog(
           insetPadding: const EdgeInsets.all(16),
-          backgroundColor: const Color(0xFF1C1C1C), // match your dark theme if needed
+          backgroundColor: const Color(0xFF1C1C1C),
           child: CalendarMonthView(
             habit: habit,
             month: initialMonth,
@@ -569,7 +569,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     return "${days}D ${hours}H ${minutes}M ${seconds}S";
   }
 
-  // Updated _addAddiction method using a dropdown and storing startTime.
+  // Updated _addAddiction method using a dropdown and storing startTime
   void _addAddiction() {
     // Predefined time frames.
     final List<Map<String, dynamic>> timeFrames = [
@@ -579,14 +579,14 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       {"label": "1 Year", "duration": Duration(days: 365).inMilliseconds},
     ];
 
-    // Filter the addictionsList to only those that are not already tracked.
+    // Filter the addictionsList to only those that are not already tracked
     List<Map<String, dynamic>> availableAddictions = addictionsList.where((addiction) {
       return !_trackedAddictions.any((active) =>
           active["name"].toString().toLowerCase() ==
           addiction["name"].toString().toLowerCase());
     }).toList();
 
-    // If all addictions are already tracked, show a message and exit.
+    // If all addictions are already tracked, show a message and exit
     if (availableAddictions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("All addictions are already tracked.")),
@@ -594,7 +594,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       return;
     }
 
-    // Set the initial selected addiction to the first available one.
+    // Set the initial selected addiction to the first available one
     Map<String, dynamic>? selectedAddiction = availableAddictions.first;
     Map<String, dynamic> selectedTimeFrame = timeFrames.first;
 
@@ -666,11 +666,11 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                     _trackedAddictions.add({
                       "name": selectedAddiction!["name"],
                       "icon": selectedAddiction!["icon"] is IconData
-                          ? selectedAddiction!["icon"].codePoint // Material Icons
-                          : selectedAddiction!["icon"].icon.codePoint, // FontAwesome Icons
+                          ? selectedAddiction!["icon"].codePoint
+                          : selectedAddiction!["icon"].icon.codePoint,
                       "fontFamily": selectedAddiction!["icon"] is IconData
                           ? selectedAddiction!["icon"].fontFamily
-                          : "FontAwesomeSolid", // Set the correct FontAwesome font family
+                          : "FontAwesomeSolid",
                       "color": (selectedAddiction!["color"] as Color).value,
                       "startTime": DateTime.now().millisecondsSinceEpoch,
                       "targetDuration": selectedTimeFrame["duration"],
@@ -700,7 +700,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     } else {
       return IconData(
         data["icon"],
-        fontFamily: data["fontFamily"], // Material Icons
+        fontFamily: data["fontFamily"],
       );
     }
   }
@@ -710,7 +710,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
     if (targetDuration == Duration(days: 7).inMilliseconds) return "1 Week";
     if (targetDuration == Duration(days: 30).inMilliseconds) return "1 Month";
     if (targetDuration == Duration(days: 365).inMilliseconds) return "1 Year";
-    // Customize further if needed.
+    // Customize further if needed
     return "";
   }
 
@@ -720,12 +720,10 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
         pageBuilder: (context, animation, secondaryAnimation) {
-          // Replace AchievementsScreen with your actual achievements screen.
-          // For example, if you have a list of achievements, pass them to the screen.
           return AchievementsScreen();
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(0, 1); // Start from the bottom
+          const begin = Offset(0, 1);
           const end = Offset.zero;
           const curve = Curves.easeOut;
           final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
@@ -802,7 +800,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: (focusColors[area] ?? Colors.grey).withValues(alpha: 0.4), // Adjust transparency here
+                                color: (focusColors[area] ?? Colors.grey).withValues(alpha: 0.4),
                                 borderRadius: BorderRadius.circular(4.0),
                                 border: Border.all(color: Colors.white, width: 1.25),
                               ),
@@ -946,7 +944,6 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  // Use withAlpha() if you want transparency.
                                   color: habitColor.withAlpha(50),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(color: Colors.white, width: 1.5),
@@ -961,7 +958,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                       children: [
                                         // Left side: Icon + Name + Description
                                         Flexible(
-                                          fit: FlexFit.loose, // Let this side take only as much width as it needs
+                                          fit: FlexFit.loose,
                                           child: Row(
                                             children: [
                                               const SizedBox(width: 10),
@@ -980,8 +977,8 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                                         fontWeight: FontWeight.bold,
                                                         color: Colors.white,
                                                       ),
-                                                      softWrap: true, // Wrap onto new line if needed
-                                                      maxLines: 2,    // Limit to 2 lines if you want
+                                                      softWrap: true,
+                                                      maxLines: 2,
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
                                                     if (habit["description"].isNotEmpty)
@@ -992,7 +989,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                                           color: Colors.white70,
                                                         ),
                                                         softWrap: true,
-                                                        maxLines: 3, // e.g., 3 lines max
+                                                        maxLines: 3,
                                                         overflow: TextOverflow.ellipsis,
                                                       ),
                                                   ],
@@ -1051,7 +1048,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                       ],
                                     ),
                                     const SizedBox(height: 12),
-                                    // Weekday Labels.
+                                    // Weekday Labels
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.start,
                                       children: _weekDays.map((day) {
@@ -1068,11 +1065,11 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                         );
                                       }).toList(),
                                     ),
-                                    // Weekday Progress Row with Expand Icon.
+                                    // Weekday Progress Row with Expand Icon
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        // Weekday Boxes.
+                                        // Weekday Boxes
                                         Row(
                                           children: List.generate(7, (dayIndex) {
                                             final bool isPastDay =
@@ -1093,13 +1090,12 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                                             );
                                           }),
                                         ),
-                                        // Expand Icon.
+                                        // Expand Icon
                                         IconButton(
                                           icon: const Icon(FontAwesomeIcons.expand,
                                               color: Colors.white),
                                           onPressed: () {
                                             _showMonthlyCalendar(context, habit, DateTime.now());
-                                            // Expand functionality (Placeholder).
                                           },
                                         ),
                                       ],
@@ -1142,7 +1138,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                   )
                 : Column(
                 children: _trackedAddictions.map((addiction) {
-                  // Calculate elapsed time.
+                  // Calculate elapsed time
                   int startTime =
                       addiction["startTime"] ?? DateTime.now().millisecondsSinceEpoch;
                   Duration elapsed = Duration(
@@ -1151,7 +1147,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                   );
                   String timerText = _formatDuration(elapsed);
 
-                  int? targetDuration = addiction["targetDuration"]; // in ms, or null for Forever.
+                  int? targetDuration = addiction["targetDuration"]; // in ms, or null for Forever
                   double progressFraction = 0;
                   if (targetDuration != null) {
                     progressFraction = elapsed.inMilliseconds / targetDuration;
@@ -1169,7 +1165,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                     ),
                     child: Stack(
                       children: [
-                        // Main content row.
+                        // Main content row
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -1225,7 +1221,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                             ),
                           ],
                         ),
-                        // Three dot icon positioned at the top right.
+                        // Three dot icon positioned at the top right
                         Positioned(
                           top: -10,
                           right: -10,
@@ -1233,7 +1229,7 @@ class _ProgressScreenState extends State<ProgressScreen> with WidgetsBindingObse
                             icon: const Icon(Icons.more_vert, color: Colors.white),
                             onSelected: (String choice) {
                               if (choice == 'Relapse') {
-                                // Reset timer by updating the startTime.
+                                // Reset timer by updating the startTime
                                 setState(() {
                                   addiction["startTime"] =
                                       DateTime.now().millisecondsSinceEpoch;
@@ -1274,9 +1270,9 @@ class SemiCircularGauge extends StatelessWidget {
   final double progressFraction; // 0.0 to 1.0
   final Color fillColor;
   final Color backgroundColor;
-  final double size; // Width of the gauge, height will be half of this.
+  final double size; // Width of the gauge, height will be half of this
   final String progressText;
-  final String targetLabel; // <-- Duration label (e.g., 1 Week, 1 Month)
+  final String targetLabel; // Duration label (e.g., 1 Week, 1 Month)
 
   const SemiCircularGauge({
     Key? key,
@@ -1305,12 +1301,12 @@ class SemiCircularGauge extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: size * 0.12, // ⬅ Adjust this value to lower the text
+            top: size * 0.12,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  progressText, // Percentage text
+                  progressText,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -1368,8 +1364,6 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
     });
   }
 
-  // Dummy logic to determine if habit is completed on a given day.
-  // Modify this to match how you store/completed dates.
   bool _isCompletedOn(DateTime day) {
     List<String> completedDates = widget.habit["completedDates"] != null 
         ? List<String>.from(widget.habit["completedDates"]) 
@@ -1390,11 +1384,14 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
       return DateTime(_currentMonth.year, _currentMonth.month, index + 1);
     });
     // Determine number of leading empty boxes (assume week starts on Monday)
-    final firstWeekday = firstDayOfMonth.weekday; // Monday=1, Sunday=7
+    final firstWeekday = firstDayOfMonth.weekday;
     final leadingEmptyBoxes = firstWeekday - 1;
     final totalSquares = leadingEmptyBoxes + monthDays.length;
     final trailingEmptyBoxes = (7 - (totalSquares % 7)) % 7;
     final totalGridCount = totalSquares + trailingEmptyBoxes;
+
+    // Fetch the color from the habit data (stored as an int)
+    Color habitColor = widget.habit["color"];
 
     return Padding(
       padding: const EdgeInsets.all(32.0), 
@@ -1404,7 +1401,7 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Month navigation row.
+            // Month navigation row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1427,7 +1424,7 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
               ],
             ),
             const SizedBox(height: 8),
-            // Days-of-week labels.
+            // Days-of-week labels
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: const [
@@ -1441,7 +1438,7 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
               ],
             ),
             const SizedBox(height: 8),
-            // Calendar grid.
+            // Calendar grid
             Expanded(
               child: GridView.builder(
                 itemCount: totalGridCount,
@@ -1461,11 +1458,11 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
                   final isCompleted = _isCompletedOn(dayDate);
                   return GestureDetector(
                     onTap: () {
-                      // Optional tap logic.
+                      // Optional tap logic
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isCompleted ? Colors.blue : Colors.grey[700],
+                        color: isCompleted ? habitColor : Colors.grey[700],
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -1473,7 +1470,7 @@ class _CalendarMonthViewState extends State<CalendarMonthView> {
                 },
               ),
             ),
-            // Close button row.
+            // Close button row
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1525,7 +1522,6 @@ class _SemiCircularGaugePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final double radius = size.width / 2;
-    // For a semi circle, position the circle such that its bottom center is at the widget's bottom center.
     final Offset center = Offset(size.width / 2, size.height);
     final double strokeWidth = 8.0;
 
@@ -1538,8 +1534,8 @@ class _SemiCircularGaugePainter extends CustomPainter {
     // Draw full semi circle (180 degrees)
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      pi, // start at 180°
-      pi, // sweep 180°
+      pi,
+      pi,
       false,
       bgPaint,
     );
@@ -1553,8 +1549,8 @@ class _SemiCircularGaugePainter extends CustomPainter {
     // Draw fill arc based on progressFraction
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      pi, // same start
-      pi * progressFraction, // fill portion
+      pi,
+      pi * progressFraction,
       false,
       fillPaint,
     );

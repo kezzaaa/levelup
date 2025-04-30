@@ -2,7 +2,7 @@
 // ignore_for_file: library_private_types_in_public_api, use_key_in_widget_constructors, use_super_parameters
 
 // Packages
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,9 +11,10 @@ import 'dart:io';
 import 'dart:math';
 
 // Files
-import 'main.dart';
 import 'userutils.dart';
 import 'login.dart';
+import 'settings.dart';
+import 'achievements.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -68,18 +69,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // ✅ Function to check if user has seen profile tutorial before
+  // Function to check if user has seen profile tutorial before
   Future<void> _checkFirstTimeUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool hasSeenTutorial = prefs.getBool('hasSeenProfileTutorial') ?? false;
 
     if (!hasSeenTutorial) {
-      // ✅ Show tutorial pop-up
+      // Show tutorial pop-up
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) _showProfileTutorial(context);
       });
 
-      // ✅ Mark tutorial as seen
+      // Mark tutorial as seen
       await prefs.setBool('hasSeenProfileTutorial', true);
     }
   }
@@ -101,9 +102,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  "• Edit your details ✏️\n"
-                  "• Pin achievements to your profile 🏅\n"
-                  "• Filter your missions with swipeable questions that make them more personalised! ⭐\n"
+                  "• Edit your details ✏️\n\n"
+                  "• Pin achievements to your profile 🏅\n\n"
+                  "• Filter your missions with swipeable questions that make them more personalised! ⭐\n\n"
                   "• Change settings ⚙️\n",
                   textAlign: TextAlign.center,
                 ),
@@ -116,6 +117,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showAchievements(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return AchievementsScreen();
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0, 1);
+          const end = Offset.zero;
+          const curve = Curves.easeOut;
+          final tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          final offsetAnimation = animation.drive(tween);
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      ),
     );
   }
 
@@ -235,7 +256,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Row with Hexagon Achievement Slots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (index) => _buildHexagonSlot()), // Generates 3 placeholders
+                  children: List.generate(
+                    3,
+                    (index) => GestureDetector(
+                      onTap: () {
+                        _showAchievements(context); // 👈 Call your method here
+                      },
+                      child: _buildHexagonSlot(),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -303,7 +332,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 12), // Space before rotating stack
 
-                // ✅ Add Swipeable Question Stack Here
+                // Add Swipeable Question Stack Here
                 SwipeableQuestionStack(onReset: _resetMissions),
 
                 const SizedBox(height: 30), // Space before settings button
@@ -381,7 +410,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _selectedDateOfBirth = TextEditingController();
   String? _selectedCountry;
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
   String username = "";
   String profilePath = "";
   final ImagePicker _picker = ImagePicker();
@@ -407,12 +435,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _firstNameController.text = prefs.getString('firstName') ?? "";
       _lastNameController.text = prefs.getString('lastName') ?? "";
       _selectedGender = prefs.getString('gender') ?? "";
-      _selectedDateOfBirth.text = prefs.getString('dob') ?? ""; // ✅ Corrected assignment
+      _selectedDateOfBirth.text = prefs.getString('dob') ?? "";
       _selectedCountry = prefs.getString('location') ?? "";
       _emailController.text = prefs.getString('email') ?? "";
-      _phoneController.text = prefs.getString('phone') ?? "";
       username = prefs.getString('username') ?? "@username";
       profilePath = prefs.getString('profilePath') ?? "";
+      
+      _useAvatar = prefs.getBool('useAvatar') ?? true;
     });
   }
 
@@ -429,7 +458,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     await prefs.setString('dob', _selectedDateOfBirth.text.trim());
     await prefs.setString('location', _selectedCountry ?? "");
     await prefs.setString('email', _emailController.text);
-    await prefs.setString('phone', _phoneController.text);
 
     // Save which image is active:
     await prefs.setBool('useAvatar', _useAvatar);
@@ -483,255 +511,227 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           },
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView( // ✅ Prevents unnecessary scrolling
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Profile Picture + Toggle Stack
-              Column(
-                children: [
-                  const Text(
-                    "Select Active Profile Picture",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      // "Your Avatar" Option (2D Avatar)
-                      Column(
+                      const Text(
+                        "Select Active Profile Picture",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
-                            "Your Avatar:",
-                            style: TextStyle(fontSize: 14),
-                          ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () {
-                              // Set this option as active
-                              setState(() {
-                                _useAvatar = true;
-                              });
-                            },
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                // Highlight with a white border if _useAvatar is true
-                                border: _useAvatar
-                                    ? Border.all(color: Colors.white, width: 2)
-                                    : null,
-                              ),
-                              child: ClipOval(
-                                child: SizedBox(
+                          // "Your Avatar" Option (2D Avatar)
+                          Column(
+                            children: [
+                              const Text("Your Avatar:", style: TextStyle(fontSize: 14)),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _useAvatar = true;
+                                  });
+                                },
+                                child: Container(
                                   width: 80,
                                   height: 80,
-                                  child: Transform.translate(
-                                    offset: const Offset(2.5, 25), // Shift upward
-                                    child: Transform.scale(
-                                      scale: 2, // Zoom in
-                                      child: Image(
-                                        image: srcGlb.isNotEmpty
-                                            ? NetworkImage(build2DAvatarUrl(srcGlb))
-                                            : const AssetImage('assets/images/defaultpicture.png'),
-                                        fit: BoxFit.cover,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: _useAvatar
+                                        ? Border.all(color: Colors.white, width: 2)
+                                        : null,
+                                  ),
+                                  child: ClipOval(
+                                    child: SizedBox(
+                                      width: 80,
+                                      height: 80,
+                                      child: Transform.translate(
+                                        offset: const Offset(2.5, 25),
+                                        child: Transform.scale(
+                                          scale: 2,
+                                          child: Image(
+                                            image: srcGlb.isNotEmpty
+                                                ? NetworkImage(build2DAvatarUrl(srcGlb))
+                                                : const AssetImage('assets/images/defaultpicture.png')
+                                                    as ImageProvider,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
+                            ],
+                          ),
+                          const SizedBox(width: 20),
+                          // "Custom Image" Option (Uploaded image)
+                          Column(
+                            children: [
+                              const Text("Custom Image:", style: TextStyle(fontSize: 14)),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _useAvatar = false;
+                                  });
+                                },
+                                child: Stack(
+                                  children: [
+                                    Container(
+                                      width: 80,
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: !_useAvatar
+                                            ? Border.all(color: Colors.white, width: 2)
+                                            : null,
+                                      ),
+                                      child: ClipOval(
+                                        child: (profilePath.isNotEmpty &&
+                                                File(getLocalPath(profilePath)).existsSync())
+                                            ? Image.file(
+                                                File(getLocalPath(profilePath)),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : const Image(
+                                                image: AssetImage('assets/images/defaultpicture.png'),
+                                                fit: BoxFit.cover,
+                                              ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: -5,
+                                      right: -5,
+                                      child: Container(
+                                        width: 30,
+                                        height: 30,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Color(0xFF212121),
+                                        ),
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          icon: const Icon(Icons.edit, color: Colors.white, size: 18),
+                                          onPressed: _pickImage,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(width: 20),
-                      // "Custom Image" Option (Uploaded image)
-                      Column(
-                        children: [
-                          const Text(
-                            "Custom Image:",
-                            style: TextStyle(fontSize: 14),
+                      const SizedBox(height: 16),
+                      _buildTextField("First Name", _firstNameController),
+                      _buildTextField("Last Name", _lastNameController),
+                      _buildTextField("Username", TextEditingController(text: username), isEditable: false),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 75,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedGender,
+                          hint: Text("Select Gender", style: TextStyle(color: Colors.grey[700])),
+                          items: ['🚹 Male', '🚺 Female']
+                              .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                              .toList(),
+                          onChanged: (value) => setState(() => _selectedGender = value),
+                          dropdownColor: const Color(0xFF141414),
+                          decoration: const InputDecoration(labelText: "Gender"),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 75,
+                        child: TextFormField(
+                          controller: _selectedDateOfBirth,
+                          readOnly: true,
+                          onTap: () => _selectDate(context),
+                          decoration: const InputDecoration(
+                            labelText: 'Birth Date',
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_today),
                           ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () {
-                              // Tapping the custom image sets it as active (highlighted)
-                              setState(() {
-                                _useAvatar = false;
-                              });
-                            },
-                            child: Stack(
-                              children: [
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    // Highlight if _useAvatar is false
-                                    border: !_useAvatar
-                                        ? Border.all(color: Colors.white, width: 2)
-                                        : null,
-                                  ),
-                                  child: ClipOval(
-                                    child: (profilePath.isNotEmpty &&
-                                            File(getLocalPath(profilePath)).existsSync())
-                                        ? Image.file(
-                                            File(getLocalPath(profilePath)),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : const Image(
-                                            image: AssetImage('assets/images/defaultpicture.png'),
-                                            fit: BoxFit.cover,
-                                          ),
-                                  ),
-                                ),
-                                // Positioned edit icon; tapping opens image picker
-                                Positioned(
-                                  bottom: -5,
-                                  right: -5,
-                                  child: Container(
-                                    width: 30,
-                                    height: 30,
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Color(0xFF212121), // Grey circle background
-                                    ),
-                                    child: IconButton(
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(Icons.edit, color: Colors.white, size: 18),
-                                      onPressed: () {
-                                        // Open image picker
-                                        _pickImage();
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
+                        ),
+                      ),
+                      SizedBox(
+                        height: 65,
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedCountry,
+                          hint: Text("Select Country", style: TextStyle(color: Colors.grey[700])),
+                          items: ['🇺🇸 USA', '🇨🇦 Canada', '🇬🇧 UK', '🇦🇺 Australia']
+                              .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                              .toList(),
+                          onChanged: (value) => setState(() => _selectedCountry = value),
+                          dropdownColor: const Color(0xFF141414),
+                          decoration: const InputDecoration(labelText: "Country"),
+                        ),
+                      ),
+                      _buildTextField("Email", _emailController),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saveProfile,
+                          child: const Text("Save and Update"),
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 16), // Reduced spacing
-
-              // Input Fields
-              _buildTextField("First Name", _firstNameController),
-              _buildTextField("Last Name", _lastNameController),
-              _buildTextField("Username", TextEditingController(text: username), isEditable: false),
-              const SizedBox(height: 10),
-
-              // Gender Dropdown
-              SizedBox(
-                height: 75, // Reduced height
-                child: DropdownButtonFormField<String>(
-                  value: _selectedGender,
-                  hint: Text(
-                    "Select Gender",
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                  items: ['🚹 Male', '🚺 Female'].map((String value) {
-                    return DropdownMenuItem(value: value, child: Text(value));
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedGender = value),
-                  dropdownColor: const Color(0xFF141414),
-                  decoration: const InputDecoration(labelText: "Gender"),
                 ),
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-              // Birth Date Picker
-              SizedBox(
-                height: 75,
-                child: TextFormField(
-                  controller: _selectedDateOfBirth,
-                  readOnly: true,
-                  onTap: () => _selectDate(context),
-                  decoration: const InputDecoration(
-                    labelText: 'Birth Date',
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                ),
-              ),
 
-              // Country Dropdown
-              SizedBox(
-                height: 65,
-                child: DropdownButtonFormField<String>(
-                  value: _selectedCountry,
-                  hint: Text(
-                    "Select Country",
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                  items: ['🇺🇸 USA', '🇨🇦 Canada', '🇬🇧 UK', '🇦🇺 Australia'].map((String value) {
-                    return DropdownMenuItem(value: value, child: Text(value));
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedCountry = value),
-                  dropdownColor: const Color(0xFF141414),
-                  decoration: const InputDecoration(labelText: "Country"),
-                ),
-              ),
+    Widget _buildTextField(String label, TextEditingController controller,
+        {bool isEditable = true}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: TextField(
+          controller: controller,
+          enabled: isEditable,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      );
+    }
+  }
 
-              _buildTextField("Email", _emailController),
-              _buildTextField("Phone", _phoneController),
-
-              const SizedBox(height: 10),
-
-              // Save Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveProfile,
-                  child: const Text("Save and Update"),
-                ),
-              ),
-            ],
+  Widget _buildHexagonSlot() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ClipPath(
+        clipper: HexagonClipper(),
+        child: Container(
+          width: 80, // Hexagon size
+          height: 85,
+          decoration: BoxDecoration(
+            color: Colors.grey[700], // Dark grey placeholder
+          ),
+          child: const Center(
+            child: Icon(Icons.add, color: Colors.white, size: 24), // White "+" icon
           ),
         ),
       ),
     );
   }
-
-  Widget _buildTextField(String label, TextEditingController controller,
-      {bool isEditable = true}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: TextField(
-        controller: controller,
-        enabled: isEditable,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-}
-
-Widget _buildHexagonSlot() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8),
-    child: ClipPath(
-      clipper: HexagonClipper(),
-      child: Container(
-        width: 80, // Hexagon size
-        height: 85,
-        decoration: BoxDecoration(
-          color: Colors.grey[700], // Dark grey placeholder
-        ),
-        child: const Center(
-          child: Icon(Icons.add, color: Colors.white, size: 24), // White "+" icon
-        ),
-      ),
-    ),
-  );
-}
 
 class HexagonClipper extends CustomClipper<Path> {
   @override
@@ -886,7 +886,7 @@ class _SwipeableQuestionStackState extends State<SwipeableQuestionStack> {
           transitionBuilder: (child, animation) {
             return SlideTransition(
               position: Tween<Offset>(
-                begin: const Offset(0, 1), // New cards slide in from the bottom.
+                begin: const Offset(0, 1), // New cards slide in from the bottom
                 end: Offset.zero,
               ).animate(animation),
               child: child,
@@ -964,78 +964,6 @@ class _SwipeableQuestionStackState extends State<SwipeableQuestionStack> {
                     ),
                   ),
                 ),
-        ),
-      ),
-    );
-  }
-}
-
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  _SettingsScreenState createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  // Local variable representing the toggle status.
-  // When true, social features are enabled and the blur is off.
-  bool _socialEnabled = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadToggleValue();
-  }
-
-  // Load the saved toggle value from SharedPreferences.
-  Future<void> _loadToggleValue() async {
-    final prefs = await SharedPreferences.getInstance();
-    bool storedValue = prefs.getBool('socialEnabled') ?? false;
-    setState(() {
-      _socialEnabled = storedValue;
-      // When social features are enabled, disable the blur (thus setting global to false).
-      blurEnabledNotifier.value = !storedValue;
-    });
-  }
-
-  // Toggle the switch and persist the new value.
-  Future<void> _toggleSocialEnabled(bool value) async {
-    setState(() {
-      _socialEnabled = value;
-      blurEnabledNotifier.value = !value;
-    });
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('socialEnabled', value);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Settings"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      // Use Padding to position the toggle near the top.
-      body: Padding(
-        padding: const EdgeInsets.only(top: 20.0, left: 16.0),
-        child: Row(
-          children: [
-            const Text(
-              "Enable Social Features",
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 10),
-            CupertinoSwitch(
-              value: _socialEnabled,
-              onChanged: _toggleSocialEnabled,
-            ),
-          ],
         ),
       ),
     );

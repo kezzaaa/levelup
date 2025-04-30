@@ -10,8 +10,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 // Files
 import 'main.dart';
 
-// Dummy 2D avatar conversion function.
-// In your actual app, this might transform a 3D URL into a 2D avatar URL.
 String build2DAvatarUrl(String srcGlb) {
   return srcGlb;
 }
@@ -409,7 +407,6 @@ class _SocialScreenState extends State<SocialScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Your Scaffold now becomes the bottom layer of the stack.
         Scaffold(
           appBar: AppBar(
             title: const Text("Social Tab"),
@@ -1087,7 +1084,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                                 ),
                               ),
                             ),
-                            // Bio text, interests, and favourite game (positioning these might require wrapping them in a Column)
+                            // Bio text, interests, and favourite game
                             Positioned(
                               bottom: 40,
                               left: 22,
@@ -1131,7 +1128,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      // Block action placeholder.
+                      // Block action placeholder
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -1142,7 +1139,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      // Follow action placeholder.
+                      // Follow action placeholder
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
